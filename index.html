@@ -12,11 +12,21 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #0b0c10; /* Dark background inspired by Tempo */
+            color: #e5e7eb; /* Light gray text for dark mode */
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.light-mode {
+            background-color: #f3f4f6; /* Light gray background */
+            color: #1f2937; /* Dark gray text */
         }
         .container {
             max-width: 800px;
             margin: 2rem auto;
             background-color: #1a1c24; /* Slightly lighter dark for the container */
+            transition: background-color 0.3s;
+        }
+        body.light-mode .container {
+            background-color: #ffffff; /* White container for light mode */
         }
         /* Custom scrollbar for better aesthetics */
         .task-list-container::-webkit-scrollbar {
@@ -26,12 +36,21 @@
             background: #2a2c33;
             border-radius: 10px;
         }
+        body.light-mode .task-list-container::-webkit-scrollbar-track {
+            background: #e5e7eb;
+        }
         .task-list-container::-webkit-scrollbar-thumb {
             background: #6b7280;
             border-radius: 10px;
         }
+        body.light-mode .task-list-container::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+        }
         .task-list-container::-webkit-scrollbar-thumb:hover {
             background: #9ca3af;
+        }
+        body.light-mode .task-list-container::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
         }
         /* Style for the checkbox to make it bigger */
         input[type="checkbox"] {
@@ -45,6 +64,9 @@
             outline: none;
             transition: all 0.2s ease-in-out;
         }
+        body.light-mode input[type="checkbox"] {
+            border-color: #d1d5db;
+        }
         input[type="checkbox"]:checked {
             background-color: #1d4ed8; /* Tempo blue accent */
             border-color: #1d4ed8;
@@ -56,9 +78,23 @@
             left: 2px;
             top: 2px;
         }
+        .task-item {
+            background-color: #1a1c24; /* Task item background dark */
+            transition: background-color 0.2s ease-in-out;
+        }
+        body.light-mode .task-item {
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+        }
+        body.light-mode .task-item:hover {
+            background-color: #e5e7eb;
+        }
         .task-item.completed .task-text {
             text-decoration: line-through;
             color: #9ca3af;
+        }
+        body.light-mode .task-item.completed .task-text {
+            color: #6b7280;
         }
         .message-box {
             position: fixed;
@@ -88,11 +124,34 @@
         .delete-btn:hover {
             background-color: #dc2626;
         }
+        .theme-toggle-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem;
+            border-radius: 9999px;
+            background-color: #1f2937;
+            color: #e5e7eb;
+            transition: background-color 0.3s, color 0.3s;
+            cursor: pointer;
+        }
+        body.light-mode .theme-toggle-button {
+            background-color: #d1d5db;
+            color: #1f2937;
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-900 text-gray-100">
 
-    <div class="container rounded-lg shadow-xl p-8">
+    <div class="container rounded-lg shadow-xl p-8 relative">
+        <button id="theme-toggle" class="theme-toggle-button">
+            <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.293 17.293a1 1 0 01-1.414-1.414l2-2a1 1 0 011.414 1.414l-2 2zM3 10a7 7 0 1114 0A7 7 0 013 10z" clip-rule="evenodd" fill-rule="evenodd" />
+            </svg>
+            <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zM14.586 4.586a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM14.586 15.414a1 1 0 01-1.414 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.414zM10 17a1 1 0 01-1 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.414 15.414a1 1 0 010-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM3 10a1 1 0 011 1h1a1 1 0 110-2H4a1 1 0 01-1 1zM5.414 4.586a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414z" clip-rule="evenodd" fill-rule="evenodd" />
+            </svg>
+        </button>
         <div class="flex flex-col items-center justify-center mb-8">
             <div class="flex items-center space-x-4 mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
@@ -156,8 +215,7 @@
         import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
         async function initFirebase() {
-            // Firebase configuration variables. If running locally, you can hardcode them here.
-            // On the Canvas platform, these are provided automatically.
+            // Firebase configuration variables.
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
             const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -354,9 +412,47 @@
             });
 
             addTaskForm.addEventListener('submit', addTask);
+
+            // Theme toggle functionality
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const moonIcon = document.getElementById('moon-icon');
+            const sunIcon = document.getElementById('sun-icon');
+            
+            function applyTheme(theme) {
+                if (theme === 'light') {
+                    document.body.classList.add('light-mode');
+                    moonIcon.classList.add('hidden');
+                    sunIcon.classList.remove('hidden');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.body.classList.remove('light-mode');
+                    moonIcon.classList.remove('hidden');
+                    sunIcon.classList.add('hidden');
+                    localStorage.setItem('theme', 'dark');
+                }
+            }
+
+            function getPreferredTheme() {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    return savedTheme;
+                }
+                return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = localStorage.getItem('theme') || 'dark';
+                applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const preferredTheme = getPreferredTheme();
+                applyTheme(preferredTheme);
+                initFirebase();
+            });
         }
 
-        document.addEventListener('DOMContentLoaded', initFirebase);
+        runChecklistApp();
     </script>
 </body>
 </html>
