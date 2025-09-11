@@ -118,7 +118,6 @@
             border-radius: 4px;
             font-size: 0.75rem;
             cursor: pointer;
-            transition: background-color 0.2s ease;
             white-space: nowrap;
         }
         .delete-btn:hover {
@@ -211,14 +210,32 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
-        async function runChecklistApp() {
-            // Firebase configuration variables.
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        async function initFirebaseAndApp() {
+            // ====================================================================================
+            // PASTE YOUR FIREBASE CONFIGURATION OBJECT BELOW.
+            // ====================================================================================
+            const firebaseConfig = {
+              apiKey: "AIzaSyDkKiTkVRFKYproZrT6i9MSEKS9kmhFQa0",
+              authDomain: "checklist-1b356.firebaseapp.com",
+              projectId: "checklist-1b356",
+              storageBucket: "checklist-1b356.firebasestorage.app",
+              messagingSenderId: "509961792596",
+              appId: "1:509961792596:web:dbfa4dc2541b97aff691c1",
+              measurementId: "G-0VZRDH8ENT"
+            };
+
+            // Check if the configuration object is valid
+            if (!firebaseConfig.projectId || !firebaseConfig.apiKey) {
+                console.error("Firebase config is missing or invalid.");
+                showMessage("Firebase configuration is invalid. Please check the code.", "error");
+                return;
+            }
+
+            const appId = firebaseConfig.appId;
+            const initialAuthToken = null;
 
             // UI elements
             const checklistSelector = document.getElementById('checklist-selector');
@@ -267,39 +284,38 @@
                 }, 3000);
             }
             
-            async function initFirebase() {
-                try {
-                    const app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-                    
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                    
-                    const userId = auth.currentUser.uid;
-                    userIdDisplay.textContent = userId;
-                    userInfo.classList.remove('hidden');
-
-                    const checklistsRef = collection(db, `artifacts/${appId}/public/data/checklists`);
-                    
-                    for (const [key, value] of Object.entries(initialChecklists)) {
-                        const docRef = doc(checklistsRef, key);
-                        const docSnap = await getDoc(docRef);
-                        if (!docSnap.exists()) {
-                            await setDoc(docRef, { name: key, tasks: value });
-                        }
-                    }
-
-                    startListening();
-
-                } catch (error) {
-                    console.error("Error initializing Firebase:", error);
-                    showMessage("Failed to connect to the dashboard.", "error");
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
                 }
+                
+                const userId = auth.currentUser.uid;
+                userIdDisplay.textContent = userId;
+                userInfo.classList.remove('hidden');
+
+                const checklistsRef = collection(db, `artifacts/${appId}/public/data/checklists`);
+                
+                for (const [key, value] of Object.entries(initialChecklists)) {
+                    const docRef = doc(checklistsRef, key);
+                    const docSnap = await getDoc(docRef);
+                    if (!docSnap.exists()) {
+                        await setDoc(docRef, { name: key, tasks: value });
+                    }
+                }
+
+                startListening();
+
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showMessage("Failed to connect to the dashboard. Please check your Firebase config and security rules.", "error");
             }
+
 
             function startListening() {
                 if (unsubscribe) {
@@ -321,7 +337,7 @@
                     checklistSection.classList.remove('hidden');
                 }, (error) => {
                     console.error("Error listening to checklist changes:", error);
-                    showMessage("Failed to load checklists.", "error");
+                    showMessage("Failed to load checklists. Check your Firestore security rules.", "error");
                 });
             }
 
@@ -451,11 +467,10 @@
             document.addEventListener('DOMContentLoaded', () => {
                 const preferredTheme = getPreferredTheme();
                 applyTheme(preferredTheme);
-                initFirebase();
+                initFirebaseAndApp();
             });
         }
-
-        runChecklistApp();
+        document.addEventListener('DOMContentLoaded', initFirebaseAndApp);
     </script>
 </body>
 </html>
