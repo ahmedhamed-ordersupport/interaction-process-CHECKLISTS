@@ -155,8 +155,9 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
-        async function runChecklistApp() {
-            // Firebase global variables
+        async function initFirebase() {
+            // Firebase configuration variables. If running locally, you can hardcode them here.
+            // On the Canvas platform, these are provided automatically.
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
             const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -199,42 +200,46 @@
                 "sales": [],
                 "winback-outreach": []
             };
-            
-            async function initializeApp() {
-                try {
-                    const app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-                    
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                    
-                    const userId = auth.currentUser.uid;
-                    userIdDisplay.textContent = userId;
-                    userInfo.classList.remove('hidden');
 
-                    const checklistsRef = collection(db, `artifacts/${appId}/public/data/checklists`);
-                    
-                    // Check and create each initial checklist if it doesn't exist.
-                    for (const [key, value] of Object.entries(initialChecklists)) {
-                        const docRef = doc(checklistsRef, key);
-                        const docSnap = await getDoc(docRef);
-                        if (!docSnap.exists()) {
-                            await setDoc(docRef, { name: key, tasks: value });
-                        }
-                    }
-
-                    startListening();
-
-                } catch (error) {
-                    console.error("Error initializing Firebase:", error);
-                    showMessage("Failed to connect to the dashboard.", "error");
-                }
+            function showMessage(message, type = 'success') {
+                messageBox.textContent = message;
+                messageBox.className = `message-box show ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+                setTimeout(() => {
+                    messageBox.classList.remove('show');
+                }, 3000);
             }
+            
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                const userId = auth.currentUser.uid;
+                userIdDisplay.textContent = userId;
+                userInfo.classList.remove('hidden');
 
+                const checklistsRef = collection(db, `artifacts/${appId}/public/data/checklists`);
+                
+                for (const [key, value] of Object.entries(initialChecklists)) {
+                    const docRef = doc(checklistsRef, key);
+                    const docSnap = await getDoc(docRef);
+                    if (!docSnap.exists()) {
+                        await setDoc(docRef, { name: key, tasks: value });
+                    }
+                }
+
+                startListening();
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showMessage("Failed to connect to the dashboard.", "error");
+            }
+            
             function startListening() {
                 if (unsubscribe) {
                     unsubscribe();
@@ -343,28 +348,15 @@
                 }
             }
 
-            function showMessage(message, type = 'success') {
-                messageBox.textContent = message;
-                messageBox.className = `message-box show ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
-                setTimeout(() => {
-                    messageBox.classList.remove('show');
-                }, 3000);
-            }
-
             checklistSelector.addEventListener('change', () => {
                 renderChecklist();
                 startListening();
             });
 
             addTaskForm.addEventListener('submit', addTask);
-            
-            document.addEventListener('DOMContentLoaded', () => {
-                initializeApp();
-            });
         }
 
-        runChecklistApp();
+        document.addEventListener('DOMContentLoaded', initFirebase);
     </script>
 </body>
 </html>
-
