@@ -11,24 +11,30 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0b0c10; /* Dark background inspired by Tempo */
-            color: #e5e7eb; /* Light gray text for dark mode */
+            background-color: #0b0c10;
+            color: #e5e7eb;
             transition: background-color 0.3s, color 0.3s;
         }
         body.light-mode {
-            background-color: #f3f4f6; /* Light gray background */
-            color: #1f2937; /* Dark gray text */
+            background-color: #f3f4f6;
+            color: #1f2937;
         }
         .container {
             max-width: 800px;
             margin: 2rem auto;
-            background-color: #1a1c24; /* Slightly lighter dark for the container */
+            background-color: #1a1c24;
             transition: background-color 0.3s;
         }
         body.light-mode .container {
-            background-color: #ffffff; /* White container for light mode */
+            background-color: #ffffff;
         }
-        /* Custom scrollbar for better aesthetics */
+        body.light-mode input,
+        body.light-mode textarea,
+        body.light-mode select {
+            color: #1f2937;
+            background-color: #e5e7eb;
+            border-color: #d1d5db;
+        }
         .task-list-container::-webkit-scrollbar {
             width: 8px;
         }
@@ -52,7 +58,6 @@
         body.light-mode .task-list-container::-webkit-scrollbar-thumb:hover {
             background: #6b7280;
         }
-        /* Style for the checkbox to make it bigger */
         input[type="checkbox"] {
             -webkit-appearance: none;
             appearance: none;
@@ -68,7 +73,7 @@
             border-color: #d1d5db;
         }
         input[type="checkbox"]:checked {
-            background-color: #1d4ed8; /* Tempo blue accent */
+            background-color: #1d4ed8;
             border-color: #1d4ed8;
         }
         input[type="checkbox"]:checked::before {
@@ -79,11 +84,11 @@
             top: 2px;
         }
         .task-item {
-            background-color: #1a1c24; /* Task item background dark */
+            background-color: #1a1c24;
             transition: background-color 0.2s ease-in-out;
         }
         body.light-mode .task-item {
-            background-color: #f3f4f6;
+            background-color: #f9fafb;
             border: 1px solid #e5e7eb;
         }
         body.light-mode .task-item:hover {
@@ -112,7 +117,7 @@
             opacity: 1;
         }
         .delete-btn {
-            background-color: #ef4444; /* Red for delete */
+            background-color: #ef4444;
             color: white;
             padding: 4px 8px;
             border-radius: 4px;
@@ -138,6 +143,71 @@
             background-color: #d1d5db;
             color: #1f2937;
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #1a1c24;
+            margin: 15% auto;
+            padding: 2rem;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        body.light-mode .modal-content {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        body.light-mode .close-button:hover,
+        body.light-mode .close-button:focus {
+            color: #1f2937;
+        }
+        #suggestion-text, #suggestion-process {
+            color: #e5e7eb;
+            background-color: #2a2c33;
+        }
+        body.light-mode #suggestion-text, body.light-mode #suggestion-process {
+            color: #1f2937;
+            background-color: #ffffff;
+        }
+        .ai-buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .gemini-response-box {
+            background-color: #2a2c33;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+        body.light-mode .gemini-response-box {
+            background-color: #e5e7eb;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100">
@@ -162,10 +232,21 @@
             <p class="text-gray-400 text-center">Your personalized dashboard to create and manage checklists for your team's daily tasks.</p>
         </div>
 
-        <div id="user-info" class="text-sm text-gray-400 mb-4 rounded-md p-2 bg-gray-800 hidden">
-            <p>User ID: <span id="user-id" class="font-medium text-gray-200"></span></p>
+        <!-- Login Form -->
+        <div id="login-form-container" class="mb-6">
+            <h2 class="text-2xl font-semibold text-gray-200 mb-4">Admin Login</h2>
+            <form id="login-form" class="flex flex-col space-y-4">
+                <input type="email" id="email-input" placeholder="Email" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="password" id="password-input" placeholder="Password" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Log In</button>
+            </form>
         </div>
 
+        <div id="user-info" class="text-sm text-gray-400 mb-4 rounded-md p-2 bg-gray-800 hidden flex items-center justify-between">
+            <p>Logged in as: <span id="user-email" class="font-medium text-gray-200"></span></p>
+            <button id="logout-btn" class="text-xs text-red-400 hover:text-red-300 font-semibold transition-colors">Log Out</button>
+        </div>
+        
         <div id="loading" class="text-center p-8 text-gray-500 font-medium">
             <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -188,12 +269,26 @@
                 </select>
             </div>
 
-            <!-- Add new task form -->
-            <form id="add-task-form" class="mb-6 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <input type="text" id="new-task-input" placeholder="Add a new task..." class="flex-1 rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required>
-                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Add Task</button>
-            </form>
-
+            <!-- Admin Options (Conditional Visibility) -->
+            <div id="admin-options" class="hidden">
+                <form id="add-task-form" class="mb-4 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <input type="text" id="new-task-input" placeholder="Add a new task..." class="flex-1 rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Add Task</button>
+                </form>
+                
+                <div class="mt-6">
+                    <h3 class="text-xl font-semibold mb-3">AI-Powered Tools ✨</h3>
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <form id="ai-checklist-form" class="flex flex-col space-y-4">
+                            <label for="ai-checklist-prompt" class="block text-sm font-medium text-gray-300">Generate a new checklist:</label>
+                            <input type="text" id="ai-checklist-prompt" placeholder="e.g., 'process for handling a customer complaint'" class="rounded-lg border-2 border-gray-600 bg-gray-900 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <button type="submit" id="generate-ai-checklist-btn" class="bg-purple-600 text-white font-semibold rounded-lg p-3 hover:bg-purple-500 transition-colors">Generate Checklist</button>
+                        </form>
+                        <div id="ai-checklist-output" class="gemini-response-box hidden"></div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="bg-gray-800 rounded-lg p-6 max-h-[400px] overflow-y-auto task-list-container">
                 <h2 class="text-xl font-semibold text-gray-200 mb-4" id="current-checklist-title">Current Checklist Items</h2>
                 <div id="task-list" class="space-y-4">
@@ -203,6 +298,43 @@
                     <p>No checklist items found. Add a new task to get started!</p>
                 </div>
             </div>
+            
+            <!-- Agent Options (Conditional Visibility) -->
+            <div id="agent-options" class="flex justify-center mt-6 hidden space-x-4">
+                <button id="suggest-task-btn" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Suggest a Task</button>
+            </div>
+            
+            <div id="ai-response-container" class="mt-6 hidden">
+                <h3 class="text-xl font-semibold mb-3">AI-Powered Response Suggestions ✨</h3>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <form id="ai-response-form" class="flex flex-col space-y-4">
+                        <textarea id="customer-message" rows="4" placeholder="Paste customer message here..." class="rounded-lg border-2 border-gray-600 bg-gray-900 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
+                        <button type="submit" id="generate-ai-response-btn" class="bg-purple-600 text-white font-semibold rounded-lg p-3 hover:bg-purple-500 transition-colors">Generate Response</button>
+                    </form>
+                    <div id="ai-response-output" class="gemini-response-box hidden"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="suggestion-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('suggestion-modal')">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Suggest a Task</h2>
+            <form id="suggestion-form" class="flex flex-col space-y-4">
+                <select id="suggestion-process" class="block w-full rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                    <option value="subscription-cancellation">Subscription Cancellation</option>
+                    <option value="returns">Returns</option>
+                    <option value="order-cancellations">Order Cancellations</option>
+                    <option value="downgrades">Downgrades</option>
+                    <option value="sales">Sales</option>
+                    <option value="winback-outreach">Winback Outreach</option>
+                </select>
+                <textarea id="suggestion-text" rows="4" placeholder="Enter your suggestion here..." class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required></textarea>
+                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Submit Suggestion</button>
+            </form>
         </div>
     </div>
     
@@ -210,13 +342,56 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
+        let db, auth, appId;
+        let unsubscribe = null;
+        let checklists = {};
+        let userRole = 'guest';
+
+        // UI elements
+        const loading = document.getElementById('loading');
+        const checklistSection = document.getElementById('checklist-section');
+        const loginFormContainer = document.getElementById('login-form-container');
+        const userEmailDisplay = document.getElementById('user-email');
+        const userInfo = document.getElementById('user-info');
+        const addForm = document.getElementById('add-task-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const checklistSelector = document.getElementById('checklist-selector');
+        const suggestionForm = document.getElementById('suggestion-form');
+        const currentChecklistTitle = document.getElementById('current-checklist-title');
+        const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
+        const adminOptions = document.getElementById('admin-options');
+        const agentOptions = document.getElementById('agent-options');
+        const newTaskInput = document.getElementById('new-task-input');
+        const suggestionProcess = document.getElementById('suggestion-process');
+        const suggestionText = document.getElementById('suggestion-text');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const moonIcon = document.getElementById('moon-icon');
+        const sunIcon = document.getElementById('sun-icon');
+        const suggestionModal = document.getElementById('suggestion-modal');
+        const messageBox = document.getElementById('message-box');
+        const aiChecklistForm = document.getElementById('ai-checklist-form');
+        const aiChecklistPrompt = document.getElementById('ai-checklist-prompt');
+        const aiChecklistOutput = document.getElementById('ai-checklist-output');
+        const aiResponseForm = document.getElementById('ai-response-form');
+        const customerMessageInput = document.getElementById('customer-message');
+        const aiResponseOutput = document.getElementById('ai-response-output');
+        const aiResponseContainer = document.getElementById('ai-response-container');
+        
+        const geminiApiKey = ""; // Replace with your Gemini API key
+        
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = `message-box show ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+
         async function initFirebaseAndApp() {
-            // ====================================================================================
-            // PASTE YOUR FIREBASE CONFIGURATION OBJECT BELOW.
-            // ====================================================================================
             const firebaseConfig = {
               apiKey: "AIzaSyDkKiTkVRFKYproZrT6i9MSEKS9kmhFQa0",
               authDomain: "checklist-1b356.firebaseapp.com",
@@ -227,250 +402,354 @@
               measurementId: "G-0VZRDH8ENT"
             };
 
-            // Check if the configuration object is valid
-            if (!firebaseConfig.projectId || !firebaseConfig.apiKey) {
-                console.error("Firebase config is missing or invalid.");
-                showMessage("Firebase configuration is invalid. Please check the code.", "error");
-                return;
-            }
-
-            const appId = firebaseConfig.appId;
-            const initialAuthToken = null;
-
-            // UI elements
-            const checklistSelector = document.getElementById('checklist-selector');
-            const taskList = document.getElementById('task-list');
-            const addTaskForm = document.getElementById('add-task-form');
-            const newTaskInput = document.getElementById('new-task-input');
-            const emptyState = document.getElementById('empty-state');
-            const currentChecklistTitle = document.getElementById('current-checklist-title');
-            const loading = document.getElementById('loading');
-            const checklistSection = document.getElementById('checklist-section');
-            const messageBox = document.getElementById('message-box');
-            const userIdDisplay = document.getElementById('user-id');
-            const userInfo = document.getElementById('user-info');
-            
-            let db, auth;
-            let unsubscribe = null;
-            let checklists = {};
-
-            const initialChecklists = {
-                "subscription-cancellation": [
-                    { name: "Resolve call and add VOC and notes to the interaction.", completed: false },
-                    { name: "Update the request type of the call interaction before resolving the call.", completed: false },
-                    { name: "Send a follow-up email to the customer, recapping or continuing the conversation.", completed: false },
-                    { name: "Raise on Slack if the case requires an exception or further assistance from other teams.", completed: false },
-                    { name: "Cancel the membership on retool, and if a refund is approved, ensure processing of the refund.", completed: false },
-                    { name: "MUST Add NetSuite cards and concession cards if applicable.", completed: false },
-                    { name: "Clear detailed notes and update CRM request types if applicable.", completed: false },
-                    { name: "Double-check the list and ensure all steps are completed before resolving the ticket.", completed: false }
-                ],
-                "returns": [
-                    { name: "Inspect the returned item upon arrival.", completed: false },
-                    { name: "Process the refund according to the policy.", completed: false },
-                    { name: "Close the return request in the system.", completed: false }
-                ],
-                "order-cancellations": [],
-                "downgrades": [],
-                "sales": [],
-                "winback-outreach": []
-            };
-
-            function showMessage(message, type = 'success') {
-                messageBox.textContent = message;
-                messageBox.className = `message-box show ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
-                setTimeout(() => {
-                    messageBox.classList.remove('show');
-                }, 3000);
-            }
-            
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+                appId = firebaseConfig.appId;
                 
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                await setPersistence(auth, browserLocalPersistence);
                 
-                const userId = auth.currentUser.uid;
-                userIdDisplay.textContent = userId;
-                userInfo.classList.remove('hidden');
+                onAuthStateChanged(auth, async (user) => {
+                    loading.classList.remove('hidden');
+                    if (user) {
+                        userEmailDisplay.textContent = user.email;
+                        loginFormContainer.classList.add('hidden');
+                        userInfo.classList.remove('hidden');
 
-                const checklistsRef = collection(db, `artifacts/${appId}/public/data/checklists`);
-                
-                for (const [key, value] of Object.entries(initialChecklists)) {
-                    const docRef = doc(checklistsRef, key);
-                    const docSnap = await getDoc(docRef);
-                    if (!docSnap.exists()) {
-                        await setDoc(docRef, { name: key, tasks: value });
+                        const userDocRef = doc(db, `artifacts/${appId}/users`, user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        userRole = userDocSnap.exists() ? userDocSnap.data().role : 'agent';
+                        
+                        updateUI(userRole);
+                        
+                        const checklistsRef = collection(db, `artifacts/${appId}/public/data/checklists`);
+                        const initialChecklists = {
+                           "subscription-cancellation": [
+                                { name: "Resolve call and add VOC and notes to the interaction.", completed: false },
+                                { name: "Update the request type of the call interaction before resolving the call.", completed: false },
+                                { name: "Send a follow-up email to the customer, recapping or continuing the conversation.", completed: false },
+                                { name: "Raise on Slack if the case requires an exception or further assistance from other teams.", completed: false },
+                                { name: "Cancel the membership on retool, and if a refund is approved, ensure processing of the refund.", completed: false },
+                                { name: "MUST Add NetSuite cards and concession cards if applicable.", completed: false },
+                                { name: "Clear detailed notes and update CRM request types if applicable.", completed: false },
+                                { name: "Double-check the list and ensure all steps are completed before resolving the ticket.", completed: false }
+                            ],
+                            "returns": [
+                                { name: "Inspect the returned item upon arrival.", completed: false },
+                                { name: "Process the refund according to the policy.", completed: false },
+                                { name: "Close the return request in the system.", completed: false }
+                            ],
+                            "order-cancellations": [],
+                            "downgrades": [],
+                            "sales": [],
+                            "winback-outreach": []
+                        };
+
+                        for (const [key, value] of Object.entries(initialChecklists)) {
+                            const docRef = doc(checklistsRef, key);
+                            const docSnap = await getDoc(docRef);
+                            if (!docSnap.exists()) {
+                                await setDoc(docRef, { name: key, tasks: value });
+                            }
+                        }
+                        startListening();
+                    } else {
+                        userEmailDisplay.textContent = '';
+                        loginFormContainer.classList.remove('hidden');
+                        userInfo.classList.add('hidden');
+                        checklistSection.classList.add('hidden');
+                        loading.classList.add('hidden');
                     }
-                }
-
-                startListening();
-
+                });
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
-                showMessage("Failed to connect to the dashboard. Please check your Firebase config and security rules.", "error");
+                showMessage("Failed to connect to the dashboard. Please check your Firebase config.", "error");
+                loading.classList.add('hidden');
+                loginFormContainer.classList.remove('hidden');
             }
-
-
-            function startListening() {
-                if (unsubscribe) {
-                    unsubscribe();
+        }
+        
+        function updateUI(role) {
+            if (role === 'admin') {
+                if (adminOptions) adminOptions.classList.remove('hidden');
+                if (aiChecklistForm) aiChecklistForm.parentElement.classList.remove('hidden');
+                if (agentOptions) agentOptions.classList.add('hidden');
+                if (aiResponseContainer) aiResponseContainer.classList.add('hidden');
+            } else {
+                if (adminOptions) adminOptions.classList.add('hidden');
+                if (aiChecklistForm) aiChecklistForm.parentElement.classList.add('hidden');
+                if (agentOptions) agentOptions.classList.remove('hidden');
+                if (aiResponseContainer) aiResponseContainer.classList.remove('hidden');
+            }
+            if (checklistSection) {
+                checklistSection.classList.remove('hidden');
+            }
+            loading.classList.add('hidden');
+        }
+        
+        function renderChecklist() {
+            const currentChecklistName = checklistSelector.value;
+            const currentChecklist = checklists[currentChecklistName] || [];
+            
+            currentChecklistTitle.textContent = `${checklistSelector.options[checklistSelector.selectedIndex].text} Checklist Items`;
+            taskList.innerHTML = '';
+            
+            const clearCompletedBtn = document.getElementById('clear-completed-btn');
+            
+            if (currentChecklist.some(task => task.completed)) {
+                if (!clearCompletedBtn) {
+                    const btn = document.createElement('button');
+                    btn.id = 'clear-completed-btn';
+                    btn.textContent = 'Clear Completed';
+                    btn.className = 'bg-red-600 text-white font-semibold rounded-lg p-3 hover:bg-red-500 transition-colors mt-4 mx-auto block';
+                    btn.addEventListener('click', clearAllCheckboxes);
+                    taskList.parentElement.appendChild(btn);
                 }
-
-                const currentChecklistName = checklistSelector.value;
-                const docRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                
-                unsubscribe = onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        checklists[currentChecklistName] = docSnap.data().tasks || [];
-                        renderChecklist();
-                    } else {
-                        checklists[currentChecklistName] = [];
-                        renderChecklist();
-                    }
-                    loading.classList.add('hidden');
-                    checklistSection.classList.remove('hidden');
-                }, (error) => {
-                    console.error("Error listening to checklist changes:", error);
-                    showMessage("Failed to load checklists. Check your Firestore security rules.", "error");
-                });
+            } else if (clearCompletedBtn) {
+                clearCompletedBtn.remove();
             }
 
-            function renderChecklist() {
-                const currentChecklistName = checklistSelector.value;
-                const currentChecklist = checklists[currentChecklistName] || [];
-                
-                currentChecklistTitle.textContent = `${checklistSelector.options[checklistSelector.selectedIndex].text} Checklist Items`;
-                taskList.innerHTML = '';
-                
-                if (currentChecklist.length === 0) {
-                    emptyState.classList.remove('hidden');
-                } else {
-                    emptyState.classList.add('hidden');
-                    currentChecklist.forEach((task, index) => {
-                        const taskItem = document.createElement('div');
-                        taskItem.className = `task-item flex items-center p-4 rounded-lg transition-colors relative ${task.completed ? 'bg-gray-700' : 'bg-gray-800 hover:bg-gray-700'}`;
-                        if (task.completed) {
-                           taskItem.classList.add('completed');
-                        }
+            if (currentChecklist.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                currentChecklist.forEach((task, index) => {
+                    const taskItem = document.createElement('div');
+                    const isCompleted = task.completed;
+                    const taskStatusClass = isCompleted ? 'completed' : 'text-gray-100';
+                    taskItem.className = `task-item flex items-center p-4 rounded-lg transition-colors relative ${isCompleted ? 'bg-gray-700 completed' : 'bg-gray-800 hover:bg-gray-700'}`;
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'task-checkbox';
+                    checkbox.dataset.index = index;
+                    if (isCompleted) checkbox.checked = true;
+                    if (userRole === 'guest') checkbox.disabled = true;
 
-                        taskItem.innerHTML = `
-                            <input type="checkbox" class="task-checkbox" data-index="${index}" ${task.completed ? 'checked' : ''}>
-                            <p class="task-text ml-4 text-white text-lg font-medium flex-1">${task.name}</p>
-                            <button class="delete-btn ml-4" data-index="${index}">Delete</button>
-                        `;
-                        
-                        taskItem.querySelector('.task-checkbox').addEventListener('change', (e) => {
-                            toggleTaskStatus(e.target.dataset.index);
-                        });
-                        
-                        taskItem.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    checkbox.addEventListener('change', (e) => {
+                        toggleTaskStatus(e.target.dataset.index);
+                    });
+                    
+                    const taskText = document.createElement('p');
+                    taskText.className = `task-text ml-4 ${taskStatusClass} text-lg font-medium flex-1`;
+                    taskText.textContent = task.name;
+                    
+                    taskItem.appendChild(checkbox);
+                    taskItem.appendChild(taskText);
+
+                    if (userRole === 'admin') {
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.className = 'delete-btn ml-4';
+                        deleteBtn.dataset.index = index;
+                        deleteBtn.addEventListener('click', (e) => {
                             deleteTask(e.target.dataset.index);
                         });
-
-                        taskList.appendChild(taskItem);
-                    });
-                }
+                        taskItem.appendChild(deleteBtn);
+                    }
+                    taskList.appendChild(taskItem);
+                });
+            }
+        }
+        
+        async function startListening() {
+            if (unsubscribe) {
+                unsubscribe();
             }
 
-            async function toggleTaskStatus(taskIndex) {
-                try {
-                    const currentChecklistName = checklistSelector.value;
-                    const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                    const tasks = checklists[currentChecklistName];
-                    tasks[taskIndex].completed = !tasks[taskIndex].completed;
-                    await updateDoc(checklistRef, { tasks: tasks });
-                    showMessage("Task status updated!");
-                } catch (error) {
-                    console.error("Error updating task status:", error);
-                    showMessage("Failed to update task status.", "error");
-                }
-            }
+            const currentChecklistName = checklistSelector.value;
+            const docRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
             
-            async function addTask(e) {
-                e.preventDefault();
-                const taskName = newTaskInput.value.trim();
-                if (!taskName) return;
-                
-                try {
-                    const currentChecklistName = checklistSelector.value;
-                    const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                    const tasks = checklists[currentChecklistName] || [];
-                    const newTasks = [...tasks, { name: taskName, completed: false }];
-                    await updateDoc(checklistRef, { tasks: newTasks });
-                    newTaskInput.value = '';
-                    showMessage("Task added!");
-                } catch (error) {
-                    console.error("Error adding task:", error);
-                    showMessage("Failed to add task.", "error");
-                }
-            }
-
-            async function deleteTask(taskIndex) {
-                try {
-                    const currentChecklistName = checklistSelector.value;
-                    const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                    const tasks = checklists[currentChecklistName];
-                    const updatedTasks = tasks.filter((_, index) => index != taskIndex);
-                    await updateDoc(checklistRef, { tasks: updatedTasks });
-                    showMessage("Task deleted!");
-                } catch (error) {
-                    console.error("Error deleting task:", error);
-                    showMessage("Failed to delete task.", "error");
-                }
-            }
-
-            checklistSelector.addEventListener('change', () => {
-                renderChecklist();
-                startListening();
-            });
-
-            addTaskForm.addEventListener('submit', addTask);
-
-            // Theme toggle functionality
-            const themeToggleBtn = document.getElementById('theme-toggle');
-            const moonIcon = document.getElementById('moon-icon');
-            const sunIcon = document.getElementById('sun-icon');
-            
-            function applyTheme(theme) {
-                if (theme === 'light') {
-                    document.body.classList.add('light-mode');
-                    moonIcon.classList.add('hidden');
-                    sunIcon.classList.remove('hidden');
-                    localStorage.setItem('theme', 'light');
+            unsubscribe = onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    checklists[currentChecklistName] = docSnap.data().tasks || [];
+                    renderChecklist();
                 } else {
-                    document.body.classList.remove('light-mode');
-                    moonIcon.classList.remove('hidden');
-                    sunIcon.classList.add('hidden');
-                    localStorage.setItem('theme', 'dark');
+                    checklists[currentChecklistName] = [];
+                    renderChecklist();
                 }
-            }
-
-            function getPreferredTheme() {
-                const savedTheme = localStorage.getItem('theme');
-                if (savedTheme) {
-                    return savedTheme;
-                }
-                return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-            }
-
-            themeToggleBtn.addEventListener('click', () => {
-                const currentTheme = localStorage.getItem('theme') || 'dark';
-                applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
-            });
-
-            document.addEventListener('DOMContentLoaded', () => {
-                const preferredTheme = getPreferredTheme();
-                applyTheme(preferredTheme);
-                initFirebaseAndApp();
+                loading.classList.add('hidden');
+                checklistSection.classList.remove('hidden');
+            }, (error) => {
+                console.error("Error listening to checklist changes:", error);
+                showMessage("Failed to load checklists. Check your Firestore security rules.", "error");
             });
         }
-        document.addEventListener('DOMContentLoaded', initFirebaseAndApp);
+        
+        async function toggleTaskStatus(taskIndex) {
+            try {
+                const currentChecklistName = checklistSelector.value;
+                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                await runTransaction(db, async (transaction) => {
+                    const docSnap = await transaction.get(checklistRef);
+                    if (!docSnap.exists()) {
+                        throw "Document does not exist!";
+                    }
+                    const updatedTasks = docSnap.data().tasks;
+                    updatedTasks[taskIndex].completed = !updatedTasks[taskIndex].completed;
+                    transaction.update(checklistRef, { tasks: updatedTasks });
+                });
+                showMessage("Task status updated!");
+            } catch (error) {
+                console.error("Error updating task status:", error);
+                showMessage("Failed to update task status.", "error");
+            }
+        }
+        
+        async function clearAllCheckboxes() {
+            try {
+                const currentChecklistName = checklistSelector.value;
+                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const tasks = checklists[currentChecklistName];
+                const updatedTasks = tasks.map(task => ({ ...task, completed: false }));
+                await updateDoc(checklistRef, { tasks: updatedTasks });
+                showMessage("Checkboxes cleared!");
+            } catch (error) {
+                console.error("Error clearing checkboxes:", error);
+                showMessage("Failed to clear checkboxes.", "error");
+            }
+        }
+
+        async function addTask(e) {
+            e.preventDefault();
+            const taskName = newTaskInput.value.trim();
+            if (!taskName) return;
+            
+            try {
+                const currentChecklistName = checklistSelector.value;
+                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const tasks = checklists[currentChecklistName] || [];
+                const newTasks = [...tasks, { name: taskName, completed: false }];
+                await updateDoc(checklistRef, { tasks: newTasks });
+                newTaskInput.value = '';
+                showMessage("Task added!");
+            } catch (error) {
+                console.error("Error adding task:", error);
+                showMessage("Failed to add task.", "error");
+            }
+        }
+
+        async function deleteTask(taskIndex) {
+            try {
+                const currentChecklistName = checklistSelector.value;
+                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const tasks = checklists[currentChecklistName];
+                const updatedTasks = tasks.filter((_, index) => index != taskIndex);
+                await updateDoc(checklistRef, { tasks: updatedTasks });
+                showMessage("Task deleted!");
+            } catch (error) {
+                console.error("Error deleting task:", error);
+                showMessage("Failed to delete task.", "error");
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            const password = document.getElementById('password-input').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showMessage("Login successful!");
+            } catch (error) {
+                console.error("Login failed:", error);
+                showMessage("Login failed. Check your email and password.", "error");
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                showMessage("Logged out successfully.");
+            } catch (error) {
+                console.error("Logout failed:", error);
+                showMessage("Logout failed.", "error");
+            }
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        async function submitSuggestion(e) {
+            e.preventDefault();
+            const process = suggestionProcess.value;
+            const suggestion = suggestionText.value;
+            
+            console.log(`New suggestion submitted for ${process}: ${suggestion}`);
+            showMessage("Suggestion submitted! Thank you for your feedback.");
+            closeModal('suggestion-modal');
+            suggestionForm.reset();
+        }
+        
+        function applyTheme(theme) {
+            const body = document.body;
+            const isDarkMode = theme === 'dark';
+            body.classList.toggle('light-mode', !isDarkMode);
+            if(moonIcon) moonIcon.classList.toggle('hidden', !isDarkMode);
+            if(sunIcon) sunIcon.classList.toggle('hidden', isDarkMode);
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        }
+
+        function getPreferredTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                return savedTheme;
+            }
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const preferredTheme = getPreferredTheme();
+            applyTheme(preferredTheme);
+            initFirebaseAndApp();
+            
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', handleLogout);
+            }
+
+            if(suggestionForm) {
+                suggestionForm.addEventListener('submit', submitSuggestion);
+            }
+            
+            if (checklistSelector) {
+                checklistSelector.addEventListener('change', startListening);
+            }
+            
+            if(addForm){
+                 addForm.addEventListener('submit', addTask);
+            }
+            
+            const suggestTaskBtn = document.getElementById('suggest-task-btn');
+            if(suggestTaskBtn){
+                suggestTaskBtn.addEventListener('click', () => {
+                    document.getElementById('suggestion-modal').style.display = 'block';
+                });
+            }
+            
+            const closeButtons = document.querySelectorAll('.close-button');
+            closeButtons.forEach(btn => btn.addEventListener('click', () => {
+                btn.closest('.modal').style.display = 'none';
+            }));
+            
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal')) {
+                    e.target.style.display = 'none';
+                }
+            });
+             if(themeToggleBtn){
+                themeToggleBtn.addEventListener('click', () => {
+                    const currentTheme = getPreferredTheme();
+                    applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+                });
+            }
+        });
+        
     </script>
 </body>
 </html>
