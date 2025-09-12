@@ -11,70 +11,73 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0b0c10;
-            color: #e5e7eb;
+            background-color: #212121;
+            color: #E0E0E0;
             transition: background-color 0.3s, color 0.3s;
         }
         body.light-mode {
-            background-color: #f3f4f6;
-            color: #1f2937;
+            background-color: #f5f5f5;
+            color: #000000;
         }
         .container {
             max-width: 800px;
             margin: 2rem auto;
-            background-color: #1a1c24;
+            background-color: #362f2f;
             transition: background-color 0.3s;
         }
         body.light-mode .container {
             background-color: #ffffff;
         }
+        body.light-mode h1, body.light-mode h2 {
+            color: #000000;
+        }
         body.light-mode input,
         body.light-mode textarea,
         body.light-mode select {
-            color: #1f2937;
-            background-color: #e5e7eb;
+            color: #000000;
+            background-color: #f3f4f6;
             border-color: #d1d5db;
         }
         .task-list-container::-webkit-scrollbar {
             width: 8px;
         }
         .task-list-container::-webkit-scrollbar-track {
-            background: #2a2c33;
+            background: #424242;
             border-radius: 10px;
         }
         body.light-mode .task-list-container::-webkit-scrollbar-track {
-            background: #e5e7eb;
+            background: #e0e0e0;
         }
         .task-list-container::-webkit-scrollbar-thumb {
-            background: #6b7280;
+            background: #757575;
             border-radius: 10px;
         }
         body.light-mode .task-list-container::-webkit-scrollbar-thumb {
-            background: #9ca3af;
+            background: #9e9e9e;
         }
         .task-list-container::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af;
+            background: #9e9e9e;
         }
         body.light-mode .task-list-container::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
+            background: #757575;
         }
         input[type="checkbox"] {
             -webkit-appearance: none;
             appearance: none;
             width: 24px;
             height: 24px;
-            border: 2px solid #5a5a66;
+            border: 2px solid #757575;
             border-radius: 4px;
             cursor: pointer;
             outline: none;
             transition: all 0.2s ease-in-out;
         }
         body.light-mode input[type="checkbox"] {
-            border-color: #d1d5db;
+            border-color: #9e9e9e;
         }
         input[type="checkbox"]:checked {
-            background-color: #1d4ed8;
-            border-color: #1d4ed8;
+            background-color: #4caf50;
+            border-color: #4caf50;
         }
         input[type="checkbox"]:checked::before {
             content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M9.707 14.293L19.414 4.586A2 2 0 0122 6V20a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h12.414l-9.707 9.707a2 2 0 010 2.828l2.586 2.586a2 2 0 012.828 0z" /></svg>');
@@ -84,22 +87,22 @@
             top: 2px;
         }
         .task-item {
-            background-color: #1a1c24;
+            background-color: #362f2f;
             transition: background-color 0.2s ease-in-out;
         }
         body.light-mode .task-item {
-            background-color: #f9fafb;
-            border: 1px solid #e5e7eb;
+            background-color: #eeeeee;
+            border: 1px solid #e0e0e0;
         }
         body.light-mode .task-item:hover {
-            background-color: #e5e7eb;
+            background-color: #e0e0e0;
         }
         .task-item.completed .task-text {
             text-decoration: line-through;
-            color: #9ca3af;
+            color: #9e9e9e;
         }
         body.light-mode .task-item.completed .task-text {
-            color: #6b7280;
+            color: #757575;
         }
         .message-box {
             position: fixed;
@@ -134,14 +137,14 @@
             right: 1rem;
             padding: 0.5rem;
             border-radius: 9999px;
-            background-color: #1f2937;
-            color: #e5e7eb;
+            background-color: #5d4037;
+            color: #E0E0E0;
             transition: background-color 0.3s, color 0.3s;
             cursor: pointer;
         }
         body.light-mode .theme-toggle-button {
             background-color: #d1d5db;
-            color: #1f2937;
+            color: #212121;
         }
         .modal {
             display: none;
@@ -155,7 +158,7 @@
             background-color: rgba(0,0,0,0.4);
         }
         .modal-content {
-            background-color: #1a1c24;
+            background-color: #362f2f;
             margin: 15% auto;
             padding: 2rem;
             border: 1px solid #888;
@@ -165,7 +168,7 @@
         }
         body.light-mode .modal-content {
             background-color: #f9fafb;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #e0e0e0;
         }
         .close-button {
             color: #aaa;
@@ -181,14 +184,14 @@
         }
         body.light-mode .close-button:hover,
         body.light-mode .close-button:focus {
-            color: #1f2937;
+            color: #212121;
         }
-        #suggestion-text, #suggestion-process {
-            color: #e5e7eb;
-            background-color: #2a2c33;
+        #suggestion-text, #suggestion-process, #password-reset-email {
+            color: #E0E0E0;
+            background-color: #424242;
         }
-        body.light-mode #suggestion-text, body.light-mode #suggestion-process {
-            color: #1f2937;
+        body.light-mode #suggestion-text, body.light-mode #suggestion-process, body.light-mode #password-reset-email {
+            color: #212121;
             background-color: #ffffff;
         }
     </style>
@@ -222,6 +225,7 @@
                 <input type="email" id="email-input" placeholder="Email" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <input type="password" id="password-input" placeholder="Password" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Log In</button>
+                <a href="#" id="forgot-password-link" class="text-center text-sm text-blue-400 hover:text-blue-300">Forgot Password?</a>
             </form>
         </div>
 
@@ -308,13 +312,25 @@
             </form>
         </div>
     </div>
+
+    <!-- Password Reset Modal -->
+    <div id="password-reset-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('password-reset-modal')">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Reset Password</h2>
+            <form id="password-reset-form" class="flex flex-col space-y-4">
+                <input type="email" id="password-reset-email" placeholder="Enter your email" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Send Reset Link</button>
+            </form>
+        </div>
+    </div>
     
     <div id="message-box" class="message-box text-white"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
         let db, auth, appId;
         let unsubscribe = null;
@@ -346,6 +362,9 @@
         const messageBox = document.getElementById('message-box');
         const ticketLinkInput = document.getElementById('ticket-link-input');
         const submitTicketBtn = document.getElementById('submit-ticket-btn');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const passwordResetModal = document.getElementById('password-reset-modal');
+        const passwordResetForm = document.getElementById('password-reset-form');
         
         function showMessage(message, type = 'success') {
             messageBox.textContent = message;
@@ -615,6 +634,19 @@
             }
         }
 
+        async function handlePasswordReset(e) {
+            e.preventDefault();
+            const email = document.getElementById('password-reset-email').value;
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showMessage("Password reset email sent. Check your inbox.");
+                closeModal('password-reset-modal');
+            } catch (error) {
+                console.error("Password reset failed:", error);
+                showMessage(`Failed to send reset email: ${error.message}`, 'error');
+            }
+        }
+
         async function handleLogout() {
             try {
                 await signOut(auth);
@@ -655,20 +687,28 @@
                 showMessage("The current checklist is empty.", "error");
                 return;
             }
-
-            // Reference to the new 'tickets' collection, using the ticket link as the document ID
+            
             const ticketCollectionRef = collection(db, `artifacts/${appId}/public/data/tickets`);
-            const ticketDocRef = doc(ticketCollectionRef, encodeURIComponent(ticketLink));
+            
+            // Extract the conversation ID from the URL
+            const urlMatch = ticketLink.match(/\/conversation\/(\d+)/);
+            const ticketId = urlMatch ? urlMatch[1] : null;
+            
+            if (!ticketId) {
+                showMessage("Please enter a valid ticket link containing a conversation ID.", "error");
+                return;
+            }
 
             try {
                 const ticketData = {
+                    ticketId: ticketId,
                     ticketLink: ticketLink,
                     checklistName: currentChecklistName,
                     tasks: tasks,
                     submittedAt: new Date(),
                     submittedBy: auth.currentUser.email
                 };
-                await setDoc(ticketDocRef, ticketData);
+                await setDoc(doc(ticketCollectionRef, ticketId), ticketData);
                 showMessage("Ticket submitted successfully! Checklist has been cleared for the next ticket.");
                 clearAllCheckboxes();
                 ticketLinkInput.value = '';
@@ -731,6 +771,17 @@
             
             if(submitTicketBtn){
                 submitTicketBtn.addEventListener('click', submitTicket);
+            }
+
+            if(forgotPasswordLink){
+                forgotPasswordLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.getElementById('password-reset-modal').style.display = 'block';
+                });
+            }
+            
+            if(passwordResetForm){
+                passwordResetForm.addEventListener('submit', handlePasswordReset);
             }
             
             const closeButtons = document.querySelectorAll('.close-button');
