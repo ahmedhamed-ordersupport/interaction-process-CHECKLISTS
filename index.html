@@ -191,23 +191,6 @@
             color: #1f2937;
             background-color: #ffffff;
         }
-        .ai-buttons-container {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        .gemini-response-box {
-            background-color: #2a2c33;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-        }
-        body.light-mode .gemini-response-box {
-            background-color: #e5e7eb;
-        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100">
@@ -275,18 +258,12 @@
                     <input type="text" id="new-task-input" placeholder="Add a new task..." class="flex-1 rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required>
                     <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Add Task</button>
                 </form>
-                
-                <div class="mt-6">
-                    <h3 class="text-xl font-semibold mb-3">AI-Powered Tools ✨</h3>
-                    <div class="bg-gray-800 rounded-lg p-6">
-                        <form id="ai-checklist-form" class="flex flex-col space-y-4">
-                            <label for="ai-checklist-prompt" class="block text-sm font-medium text-gray-300">Generate a new checklist:</label>
-                            <input type="text" id="ai-checklist-prompt" placeholder="e.g., 'process for handling a customer complaint'" class="rounded-lg border-2 border-gray-600 bg-gray-900 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                            <button type="submit" id="generate-ai-checklist-btn" class="bg-purple-600 text-white font-semibold rounded-lg p-3 hover:bg-purple-500 transition-colors">Generate Checklist</button>
-                        </form>
-                        <div id="ai-checklist-output" class="gemini-response-box hidden"></div>
-                    </div>
-                </div>
+            </div>
+
+            <!-- Ticket Link Input -->
+            <div class="mb-6">
+                <label for="ticket-link-input" class="block text-sm font-medium text-gray-300 mb-2">Ticket Link:</label>
+                <input type="url" id="ticket-link-input" placeholder="Paste ticket link here..." class="block w-full rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required>
             </div>
             
             <div class="bg-gray-800 rounded-lg p-6 max-h-[400px] overflow-y-auto task-list-container">
@@ -300,19 +277,13 @@
             </div>
             
             <!-- Agent Options (Conditional Visibility) -->
-            <div id="agent-options" class="flex justify-center mt-6 hidden space-x-4">
+            <div id="agent-options" class="flex justify-center mt-6 hidden">
                 <button id="suggest-task-btn" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Suggest a Task</button>
             </div>
-            
-            <div id="ai-response-container" class="mt-6 hidden">
-                <h3 class="text-xl font-semibold mb-3">AI-Powered Response Suggestions ✨</h3>
-                <div class="bg-gray-800 rounded-lg p-6">
-                    <form id="ai-response-form" class="flex flex-col space-y-4">
-                        <textarea id="customer-message" rows="4" placeholder="Paste customer message here..." class="rounded-lg border-2 border-gray-600 bg-gray-900 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
-                        <button type="submit" id="generate-ai-response-btn" class="bg-purple-600 text-white font-semibold rounded-lg p-3 hover:bg-purple-500 transition-colors">Generate Response</button>
-                    </form>
-                    <div id="ai-response-output" class="gemini-response-box hidden"></div>
-                </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-center mt-6">
+                <button id="submit-ticket-btn" class="bg-green-600 text-white font-semibold rounded-lg p-3 hover:bg-green-500 transition-colors">Submit Ticket</button>
             </div>
 
         </div>
@@ -373,15 +344,8 @@
         const sunIcon = document.getElementById('sun-icon');
         const suggestionModal = document.getElementById('suggestion-modal');
         const messageBox = document.getElementById('message-box');
-        const aiChecklistForm = document.getElementById('ai-checklist-form');
-        const aiChecklistPrompt = document.getElementById('ai-checklist-prompt');
-        const aiChecklistOutput = document.getElementById('ai-checklist-output');
-        const aiResponseForm = document.getElementById('ai-response-form');
-        const customerMessageInput = document.getElementById('customer-message');
-        const aiResponseOutput = document.getElementById('ai-response-output');
-        const aiResponseContainer = document.getElementById('ai-response-container');
-        
-        const geminiApiKey = ""; // Replace with your Gemini API key
+        const ticketLinkInput = document.getElementById('ticket-link-input');
+        const submitTicketBtn = document.getElementById('submit-ticket-btn');
         
         function showMessage(message, type = 'success') {
             messageBox.textContent = message;
@@ -411,7 +375,6 @@
                 await setPersistence(auth, browserLocalPersistence);
                 
                 onAuthStateChanged(auth, async (user) => {
-                    loading.classList.remove('hidden');
                     if (user) {
                         userEmailDisplay.textContent = user.email;
                         loginFormContainer.classList.add('hidden');
@@ -473,14 +436,10 @@
         function updateUI(role) {
             if (role === 'admin') {
                 if (adminOptions) adminOptions.classList.remove('hidden');
-                if (aiChecklistForm) aiChecklistForm.parentElement.classList.remove('hidden');
                 if (agentOptions) agentOptions.classList.add('hidden');
-                if (aiResponseContainer) aiResponseContainer.classList.add('hidden');
             } else {
                 if (adminOptions) adminOptions.classList.add('hidden');
-                if (aiChecklistForm) aiChecklistForm.parentElement.classList.add('hidden');
                 if (agentOptions) agentOptions.classList.remove('hidden');
-                if (aiResponseContainer) aiResponseContainer.classList.remove('hidden');
             }
             if (checklistSection) {
                 checklistSection.classList.remove('hidden');
@@ -525,7 +484,6 @@
                     checkbox.className = 'task-checkbox';
                     checkbox.dataset.index = index;
                     if (isCompleted) checkbox.checked = true;
-                    if (userRole === 'guest') checkbox.disabled = true;
 
                     checkbox.addEventListener('change', (e) => {
                         toggleTaskStatus(e.target.dataset.index);
@@ -681,6 +639,45 @@
             closeModal('suggestion-modal');
             suggestionForm.reset();
         }
+
+        async function submitTicket(e) {
+            e.preventDefault();
+            const ticketLink = ticketLinkInput.value.trim();
+            if (!ticketLink) {
+                showMessage("Please enter a ticket link.", "error");
+                return;
+            }
+
+            const currentChecklistName = checklistSelector.value;
+            const tasks = checklists[currentChecklistName];
+
+            if (!tasks || tasks.length === 0) {
+                showMessage("The current checklist is empty.", "error");
+                return;
+            }
+
+            // Reference to the new 'tickets' collection, using the ticket link as the document ID
+            const ticketCollectionRef = collection(db, `artifacts/${appId}/public/data/tickets`);
+            const ticketDocRef = doc(ticketCollectionRef, encodeURIComponent(ticketLink));
+
+            try {
+                const ticketData = {
+                    ticketLink: ticketLink,
+                    checklistName: currentChecklistName,
+                    tasks: tasks,
+                    submittedAt: new Date(),
+                    submittedBy: auth.currentUser.email
+                };
+                await setDoc(ticketDocRef, ticketData);
+                showMessage("Ticket submitted successfully! Checklist has been cleared for the next ticket.");
+                clearAllCheckboxes();
+                ticketLinkInput.value = '';
+            } catch (error) {
+                console.error("Error submitting ticket:", error);
+                showMessage("Failed to submit ticket. Please try again.", "error");
+            }
+        }
+
         
         function applyTheme(theme) {
             const body = document.body;
@@ -730,6 +727,10 @@
                 suggestTaskBtn.addEventListener('click', () => {
                     document.getElementById('suggestion-modal').style.display = 'block';
                 });
+            }
+            
+            if(submitTicketBtn){
+                submitTicketBtn.addEventListener('click', submitTicket);
             }
             
             const closeButtons = document.querySelectorAll('.close-button');
