@@ -362,6 +362,7 @@
         let db, auth, appId;
         let unsubscribe = null;
         let masterChecklists = {};
+        let userChecklists = {};
         let userChecklistRef = null;
         let userRole = 'guest';
 
@@ -533,24 +534,26 @@
             if (!user) return;
 
             const currentChecklistName = checklistSelector.value;
-            const docRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+            const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
             
-            unsubscribe = onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    masterChecklists[currentChecklistName] = docSnap.data().tasks || [];
-                    userChecklistRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+            unsubscribe = onSnapshot(masterChecklistRef, (masterDocSnap) => {
+                if (masterDocSnap.exists()) {
+                    masterChecklists[currentChecklistName] = masterDocSnap.data().tasks || [];
                     
-                    onSnapshot(userChecklistRef, (userDocSnap) => {
+                    // Now, get the user's specific checklist and merge
+                    const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+                    onSnapshot(userDocRef, (userDocSnap) => {
+                        let userTasks;
                         if (userDocSnap.exists()) {
-                            renderChecklist(userDocSnap.data().tasks);
+                            // Use the user's private checklist if it exists
+                            userTasks = userDocSnap.data().tasks || [];
                         } else {
-                            renderChecklist(masterChecklists[currentChecklistName]);
+                            // Otherwise, create a copy of the master checklist for the user
+                            userTasks = JSON.parse(JSON.stringify(masterChecklists[currentChecklistName]));
                         }
+                        renderChecklist(userTasks);
                         loading.classList.add('hidden');
                         checklistSection.classList.remove('hidden');
-                    }, (error) => {
-                        console.error("Error listening to user checklist:", error);
-                        showMessage("Failed to load your personal checklist. Check permissions.", "error");
                     });
                 } else {
                     renderChecklist([]);
@@ -570,17 +573,21 @@
                 const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
                 
                 await runTransaction(db, async (transaction) => {
-                    const docSnap = await transaction.get(userDocRef);
+                    const userDocSnap = await transaction.get(userDocRef);
                     let userTasks;
-                    if (docSnap.exists()) {
-                        userTasks = docSnap.data().tasks;
+
+                    if (!userDocSnap.exists()) {
+                        const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                        const masterDocSnap = await getDoc(masterChecklistRef);
+                        const masterTasks = masterDocSnap.exists() ? masterDocSnap.data().tasks : [];
+                        userTasks = JSON.parse(JSON.stringify(masterTasks));
+                        transaction.set(userDocRef, { tasks: userTasks });
                     } else {
-                        const masterChecklist = masterChecklists[currentChecklistName] || [];
-                        userTasks = JSON.parse(JSON.stringify(masterChecklist));
+                        userTasks = userDocSnap.data().tasks;
                     }
                     
                     userTasks[taskIndex].completed = !userTasks[taskIndex].completed;
-                    transaction.set(userDocRef, { tasks: userTasks }, { merge: true });
+                    transaction.update(userDocRef, { tasks: userTasks });
                 });
                 showMessage("Task status updated!");
             } catch (error) {
@@ -593,11 +600,11 @@
             try {
                 const user = auth.currentUser;
                 const currentChecklistName = checklistSelector.value;
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
                 const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
                 const masterDocSnap = await getDoc(masterChecklistRef);
                 const masterTasks = masterDocSnap.exists() ? masterDocSnap.data().tasks : [];
 
-                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
                 await setDoc(userDocRef, { tasks: masterTasks });
 
                 showMessage("Checkboxes cleared!");
@@ -619,7 +626,7 @@
                 const newTasks = [...tasks, { name: taskName, completed: false }];
                 await updateDoc(checklistRef, { tasks: newTasks });
                 newTaskInput.value = '';
-                showMessage("Task added!");
+                showMessage("Task added to master checklist!");
             } catch (error) {
                 console.error("Error adding task:", error);
                 showMessage("Failed to add task.", "error");
@@ -633,7 +640,7 @@
                 const tasks = masterChecklists[currentChecklistName];
                 const updatedTasks = tasks.filter((_, index) => index != taskIndex);
                 await updateDoc(checklistRef, { tasks: updatedTasks });
-                showMessage("Task deleted!");
+                showMessage("Task deleted from master checklist!");
             } catch (error) {
                 console.error("Error deleting task:", error);
                 showMessage("Failed to delete task.", "error");
@@ -698,13 +705,6 @@
                 showMessage("Please enter a ticket link.", "error");
                 return;
             }
-            const currentChecklistName = checklistSelector.value;
-            const tasks = userChecklists[currentChecklistName];
-
-            if (!tasks || tasks.length === 0) {
-                showMessage("The current checklist is empty.", "error");
-                return;
-            }
             
             const user = auth.currentUser;
             if (!user) {
@@ -712,33 +712,42 @@
                 return;
             }
             
-            // Extract the conversation ID from the URL
             const urlMatch = ticketLink.match(/\/conversation\/(\d+)/);
             const ticketId = urlMatch ? urlMatch[1] : null;
-            
+
             if (!ticketId) {
-                showMessage("Please enter a valid ticket link containing a conversation ID.", "error");
+                showMessage("Please enter a valid Freshworks ticket link containing a conversation ID.", "error");
                 return;
             }
             
+            const currentChecklistName = checklistSelector.value;
+            const userChecklistRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+            const userDocSnap = await getDoc(userChecklistRef);
+            
+            if (!userDocSnap.exists()) {
+                showMessage("No checklist found to submit. Please select a checklist and check some tasks.", "error");
+                return;
+            }
+            
+            const ticketData = {
+                ticketId: ticketId,
+                ticketLink: ticketLink,
+                checklistName: currentChecklistName,
+                tasks: userDocSnap.data().tasks,
+                submittedAt: new Date(),
+                submittedBy: user.email
+            };
+
             const ticketDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/tickets/${ticketId}`);
 
             try {
-                const ticketData = {
-                    ticketId: ticketId,
-                    ticketLink: ticketLink,
-                    checklistName: currentChecklistName,
-                    tasks: tasks,
-                    submittedAt: new Date(),
-                    submittedBy: user.email
-                };
                 await setDoc(ticketDocRef, ticketData);
                 showMessage("Ticket submitted successfully! Checklist has been cleared for the next ticket.");
                 clearAllCheckboxes();
                 ticketLinkInput.value = '';
             } catch (error) {
                 console.error("Error submitting ticket:", error);
-                showMessage("Failed to submit ticket. Please try again.", "error");
+                showMessage(`Failed to submit ticket: ${error.message}`, "error");
             }
         }
         
