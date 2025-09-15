@@ -357,11 +357,12 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
         let db, auth, appId;
         let unsubscribe = null;
-        let checklists = {};
+        let masterChecklists = {};
+        let userChecklistRef = null;
         let userRole = 'guest';
 
         // UI elements
@@ -392,7 +393,7 @@
         const forgotPasswordLink = document.getElementById('forgot-password-link');
         const passwordResetModal = document.getElementById('password-reset-modal');
         const passwordResetForm = document.getElementById('password-reset-form');
-        
+
         function showMessage(message, type = 'success') {
             messageBox.textContent = message;
             messageBox.className = `message-box show ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
@@ -431,37 +432,7 @@
                         userRole = userDocSnap.exists() ? userDocSnap.data().role : 'agent';
                         
                         updateUI(userRole);
-                        
-                        const initialChecklists = {
-                           "subscription-cancellation": [
-                                { name: "Resolve call and add VOC and notes to the interaction.", completed: false },
-                                { name: "Update the request type of the call interaction before resolving the call.", completed: false },
-                                { name: "Send a follow-up email to the customer, recapping or continuing the conversation.", completed: false },
-                                { name: "Raise on Slack if the case requires an exception or further assistance from other teams.", completed: false },
-                                { name: "Cancel the membership on retool, and if a refund is approved, ensure processing of the refund.", completed: false },
-                                { name: "MUST Add NetSuite cards and concession cards if applicable.", completed: false },
-                                { name: "Clear detailed notes and update CRM request types if applicable.", completed: false },
-                                { name: "Double-check the list and ensure all steps are completed before resolving the ticket.", completed: false }
-                            ],
-                            "returns": [
-                                { name: "Inspect the returned item upon arrival.", completed: false },
-                                { name: "Process the refund according to the policy.", completed: false },
-                                { name: "Close the return request in the system.", completed: false }
-                            ],
-                            "order-cancellations": [],
-                            "downgrades": [],
-                            "sales": [],
-                            "winback-outreach": []
-                        };
-
-                        for (const [key, value] of Object.entries(initialChecklists)) {
-                            const docRef = doc(db, `artifacts/${appId}/public/data/checklists`, key);
-                            const docSnap = await getDoc(docRef);
-                            if (!docSnap.exists()) {
-                                await setDoc(docRef, { name: key, tasks: value });
-                            }
-                        }
-                        startListening();
+                        startListeningToMasterChecklists();
                     } else {
                         userEmailDisplay.textContent = '';
                         loginFormContainer.classList.remove('hidden');
@@ -492,16 +463,14 @@
             loading.classList.add('hidden');
         }
         
-        function renderChecklist() {
+        function renderChecklist(tasks) {
             const currentChecklistName = checklistSelector.value;
-            const currentChecklist = checklists[currentChecklistName] || [];
-            
             currentChecklistTitle.textContent = `${checklistSelector.options[checklistSelector.selectedIndex].text} Checklist Items`;
             taskList.innerHTML = '';
             
             const clearCompletedBtn = document.getElementById('clear-completed-btn');
             
-            if (currentChecklist.some(task => task.completed)) {
+            if (tasks.some(task => task.completed)) {
                 if (!clearCompletedBtn) {
                     const btn = document.createElement('button');
                     btn.id = 'clear-completed-btn';
@@ -514,11 +483,11 @@
                 clearCompletedBtn.remove();
             }
 
-            if (currentChecklist.length === 0) {
+            if (tasks.length === 0) {
                 emptyState.classList.remove('hidden');
             } else {
                 emptyState.classList.add('hidden');
-                currentChecklist.forEach((task, index) => {
+                tasks.forEach((task, index) => {
                     const taskItem = document.createElement('div');
                     const isCompleted = task.completed;
                     const taskStatusClass = isCompleted ? 'completed' : 'text-gray-100';
@@ -556,42 +525,62 @@
             }
         }
         
-        async function startListening() {
+        async function startListeningToMasterChecklists() {
             if (unsubscribe) {
                 unsubscribe();
             }
+            const user = auth.currentUser;
+            if (!user) return;
 
             const currentChecklistName = checklistSelector.value;
             const docRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
             
             unsubscribe = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
-                    checklists[currentChecklistName] = docSnap.data().tasks || [];
-                    renderChecklist();
+                    masterChecklists[currentChecklistName] = docSnap.data().tasks || [];
+                    userChecklistRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+                    
+                    onSnapshot(userChecklistRef, (userDocSnap) => {
+                        if (userDocSnap.exists()) {
+                            renderChecklist(userDocSnap.data().tasks);
+                        } else {
+                            renderChecklist(masterChecklists[currentChecklistName]);
+                        }
+                        loading.classList.add('hidden');
+                        checklistSection.classList.remove('hidden');
+                    }, (error) => {
+                        console.error("Error listening to user checklist:", error);
+                        showMessage("Failed to load your personal checklist. Check permissions.", "error");
+                    });
                 } else {
-                    checklists[currentChecklistName] = [];
-                    renderChecklist();
+                    renderChecklist([]);
                 }
                 loading.classList.add('hidden');
                 checklistSection.classList.remove('hidden');
             }, (error) => {
-                console.error("Error listening to checklist changes:", error);
-                showMessage("Failed to load checklists. Check your Firestore security rules.", "error");
+                console.error("Error listening to master checklist changes:", error);
+                showMessage("Failed to load master checklists. Check your Firestore security rules.", "error");
             });
         }
         
         async function toggleTaskStatus(taskIndex) {
             try {
+                const user = auth.currentUser;
                 const currentChecklistName = checklistSelector.value;
-                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+                
                 await runTransaction(db, async (transaction) => {
-                    const docSnap = await transaction.get(checklistRef);
-                    if (!docSnap.exists()) {
-                        throw "Document does not exist!";
+                    const docSnap = await transaction.get(userDocRef);
+                    let userTasks;
+                    if (docSnap.exists()) {
+                        userTasks = docSnap.data().tasks;
+                    } else {
+                        const masterChecklist = masterChecklists[currentChecklistName] || [];
+                        userTasks = JSON.parse(JSON.stringify(masterChecklist));
                     }
-                    const updatedTasks = docSnap.data().tasks;
-                    updatedTasks[taskIndex].completed = !updatedTasks[taskIndex].completed;
-                    transaction.update(checklistRef, { tasks: updatedTasks });
+                    
+                    userTasks[taskIndex].completed = !userTasks[taskIndex].completed;
+                    transaction.set(userDocRef, { tasks: userTasks }, { merge: true });
                 });
                 showMessage("Task status updated!");
             } catch (error) {
@@ -602,11 +591,15 @@
         
         async function clearAllCheckboxes() {
             try {
+                const user = auth.currentUser;
                 const currentChecklistName = checklistSelector.value;
-                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                const tasks = checklists[currentChecklistName];
-                const updatedTasks = tasks.map(task => ({ ...task, completed: false }));
-                await updateDoc(checklistRef, { tasks: updatedTasks });
+                const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const masterDocSnap = await getDoc(masterChecklistRef);
+                const masterTasks = masterDocSnap.exists() ? masterDocSnap.data().tasks : [];
+
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+                await setDoc(userDocRef, { tasks: masterTasks });
+
                 showMessage("Checkboxes cleared!");
             } catch (error) {
                 console.error("Error clearing checkboxes:", error);
@@ -622,7 +615,7 @@
             try {
                 const currentChecklistName = checklistSelector.value;
                 const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                const tasks = checklists[currentChecklistName] || [];
+                const tasks = masterChecklists[currentChecklistName] || [];
                 const newTasks = [...tasks, { name: taskName, completed: false }];
                 await updateDoc(checklistRef, { tasks: newTasks });
                 newTaskInput.value = '';
@@ -637,7 +630,7 @@
             try {
                 const currentChecklistName = checklistSelector.value;
                 const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                const tasks = checklists[currentChecklistName];
+                const tasks = masterChecklists[currentChecklistName];
                 const updatedTasks = tasks.filter((_, index) => index != taskIndex);
                 await updateDoc(checklistRef, { tasks: updatedTasks });
                 showMessage("Task deleted!");
@@ -646,7 +639,7 @@
                 showMessage("Failed to delete task.", "error");
             }
         }
-
+        
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email-input').value;
@@ -706,7 +699,7 @@
                 return;
             }
             const currentChecklistName = checklistSelector.value;
-            const tasks = checklists[currentChecklistName];
+            const tasks = userChecklists[currentChecklistName];
 
             if (!tasks || tasks.length === 0) {
                 showMessage("The current checklist is empty.", "error");
@@ -718,7 +711,6 @@
                 showMessage("You must be logged in to submit a ticket.", "error");
                 return;
             }
-            const ticketCollectionRef = collection(db, `artifacts/${appId}/users/${user.uid}/tickets`);
             
             // Extract the conversation ID from the URL
             const urlMatch = ticketLink.match(/\/conversation\/(\d+)/);
@@ -728,6 +720,8 @@
                 showMessage("Please enter a valid ticket link containing a conversation ID.", "error");
                 return;
             }
+            
+            const ticketDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/tickets/${ticketId}`);
 
             try {
                 const ticketData = {
@@ -738,7 +732,7 @@
                     submittedAt: new Date(),
                     submittedBy: user.email
                 };
-                await setDoc(doc(ticketCollectionRef, ticketId), ticketData);
+                await setDoc(ticketDocRef, ticketData);
                 showMessage("Ticket submitted successfully! Checklist has been cleared for the next ticket.");
                 clearAllCheckboxes();
                 ticketLinkInput.value = '';
@@ -784,7 +778,7 @@
             }
             
             if (checklistSelector) {
-                checklistSelector.addEventListener('change', startListening);
+                checklistSelector.addEventListener('change', startListeningToMasterChecklists);
             }
             
             if(addForm){
