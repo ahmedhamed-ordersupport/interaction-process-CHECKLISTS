@@ -357,7 +357,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
         let db, auth, appId;
         let unsubscribe = null;
@@ -691,11 +691,31 @@
             e.preventDefault();
             const process = suggestionProcess.value;
             const suggestion = suggestionText.value;
+            const user = auth.currentUser;
             
-            console.log(`New suggestion submitted for ${process}: ${suggestion}`);
-            showMessage("Suggestion submitted! Thank you for your feedback.");
-            closeModal('suggestion-modal');
-            suggestionForm.reset();
+            if (!user) {
+                showMessage("You must be logged in to submit a suggestion.", "error");
+                closeModal('suggestion-modal');
+                return;
+            }
+            
+            const suggestionData = {
+                process: process,
+                suggestion: suggestion,
+                submittedBy: user.email,
+                submittedAt: new Date()
+            };
+
+            try {
+                const suggestionsCollectionRef = collection(db, `artifacts/${appId}/public/data/suggestions`);
+                await addDoc(suggestionsCollectionRef, suggestionData);
+                showMessage("Suggestion submitted! Thank you for your feedback.");
+                closeModal('suggestion-modal');
+                suggestionForm.reset();
+            } catch (error) {
+                console.error("Error submitting suggestion:", error);
+                showMessage(`Failed to submit suggestion: ${error.message}`, "error");
+            }
         }
 
         async function submitTicket(e) {
