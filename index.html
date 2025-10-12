@@ -3,861 +3,637 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T2 OS Cancellations & Returns Checklist</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>RetentionBot: Strategy Helper</title>
+    <!-- Load Montserrat Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"> 
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind to use class-based dark mode
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // NEW BROWN ACCENT THEME
+                        'accent-brown': '#70594B', // Sienna/Cocoa tone
+                        'accent-brown-dark': '#554238',
+                        'accent-brown-light': '#D6C9C2',
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        /* BASE STYLES */
+        :root {
+            --accent: #70594B;
+            --accent-dark: #554238;
+        }
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #212121;
-            color: #E0E0E0;
-            transition: background-color 0.3s, color 0.3s;
+            /* NEW FONT */
+            font-family: 'Montserrat', sans-serif;
+            /* NEW LIGHT MODE BACKGROUND: Soft Gray */
+            background-color: #f5f5f5; 
         }
-        body.light-mode {
-            background-color: #f5f5f5;
-            color: #000000;
+        /* NEW DARK MODE BACKGROUND: Deep Charcoal */
+        body.dark {
+            background-color: #1c1c1c; 
         }
-        .container {
-            max-width: 800px;
-            margin: 2rem auto;
-            background-color: #3e2723;
-            transition: background-color 0.3s;
+
+        /* CUSTOM ANIMATIONS FOR BUTTONS (Pulse/Pop) */
+        .pulse-on-hover {
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        body.light-mode .container {
-            background-color: #ffffff;
+        .pulse-on-hover:hover {
+            transform: scale(1.01); /* Gentle pop out */
+            /* Custom brown shadow using the defined accent color */
+            box-shadow: 0 10px 15px -3px rgba(112, 89, 75, 0.5), 0 4px 6px -2px rgba(112, 89, 75, 0.25); 
         }
-        body.light-mode h1, body.light-mode h2 {
-            color: #000000;
+        /* Ensure the copy button uses its own color for animation */
+        .copy-pulse-on-hover:hover {
+             transform: scale(1.01);
+             /* Custom green shadow */
+             box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.5), 0 4px 6px -2px rgba(22, 163, 74, 0.25); 
         }
-        body.light-mode input,
-        body.light-mode textarea,
-        body.light-mode select {
-            color: #000000;
-            background-color: #f3f4f6;
-            border-color: #d1d5db;
+
+        .email-display {
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
-        .task-list-container::-webkit-scrollbar {
-            width: 8px;
+        .email-container {
+            border: 1px solid var(--accent-brown);
         }
-        .task-list-container::-webkit-scrollbar-track {
-            background: #424242;
-            border-radius: 10px;
-        }
-        body.light-mode .task-list-container::-webkit-scrollbar-track {
-            background: #e0e0e0;
-        }
-        .task-list-container::-webkit-scrollbar-thumb {
-            background: #757575;
-            border-radius: 10px;
-        }
-        body.light-mode .task-list-container::-webkit-scrollbar-thumb {
-            background: #9e9e9e;
-        }
-        .task-list-container::-webkit-scrollbar-thumb:hover {
-            background: #9e9e9e;
-        }
-        body.light-mode .task-list-container::-webkit-scrollbar-thumb:hover {
-            background: #757575;
-        }
-        input[type="checkbox"] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            border: 2px solid #757575;
-            border-radius: 4px;
-            cursor: pointer;
-            outline: none;
-            transition: all 0.2s ease-in-out;
-        }
-        body.light-mode input[type="checkbox"] {
-            border-color: #9e9e9e;
-        }
-        input[type="checkbox"]:checked {
-            background-color: #4caf50;
-            border-color: #4caf50;
-        }
-        input[type="checkbox"]:checked::before {
-            content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M9.707 14.293L19.414 4.586A2 2 0 0122 6V20a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h12.414l-9.707 9.707a2 2 0 010 2.828l2.586 2.586a2 2 0 012.828 0z" /></svg>');
-            display: block;
-            position: relative;
-            left: 2px;
-            top: 2px;
-        }
-        .task-item {
-            background-color: #3e2723;
-            transition: background-color 0.2s ease-in-out;
-        }
-        body.light-mode .task-item {
-            background-color: #eeeeee;
-            border: 1px solid #e0e0e0;
-        }
-        body.light-mode .task-item:hover {
-            background-color: #e0e0e0;
-        }
-        .task-item.completed .task-text {
-            text-decoration: line-through;
-            color: #d4c2a5;
-        }
-        body.light-mode .task-item.completed .task-text {
-            color: #757575;
-        }
-        .message-box {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 500;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .message-box.show {
-            opacity: 1;
-        }
-        .delete-btn {
-            background-color: #ef4444;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .delete-btn:hover {
-            background-color: #dc2626;
-        }
-        .theme-toggle-button {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem;
-            border-radius: 9999px;
-            background-color: #5d4037;
-            color: #f5f5dc;
-            transition: background-color 0.3s, color 0.3s;
-            cursor: pointer;
-        }
-        body.light-mode .theme-toggle-button {
-            background-color: #d1d5db;
-            color: #212121;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-        }
-        .modal-content {
-            background-color: #3e2723;
-            margin: 15% auto;
-            padding: 2rem;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
-            border-radius: 8px;
-        }
-        body.light-mode .modal-content {
-            background-color: #f9fafb;
-            border: 1px solid #e0e0e0;
-        }
-        .close-button {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .close-button:hover,
-        .close-button:focus {
-            color: #fff;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        body.light-mode .close-button:hover,
-        body.light-mode .close-button:focus {
-            color: #212121;
-        }
-        #suggestion-text, #suggestion-process, #password-reset-email {
-            color: #f5f5dc;
-            background-color: #424242;
-        }
-        body.light-mode #suggestion-text, body.light-mode #suggestion-process, body.light-mode #password-reset-email {
-            color: #000000;
-            background-color: #ffffff;
-        }
-        body.light-mode #login-form-container input {
-            background-color: #f5f5f5;
-        }
-        #login-form-container input {
-            background-color: #362f2f;
-        }
-        body.light-mode .text-gray-400 {
-            color: #333333;
-        }
-        .task-text {
-            color: #f5f5dc;
-        }
-        body.light-mode .task-text {
-            color: #000000;
-        }
-        #current-checklist-title {
-            color: #f5f5dc;
-        }
-        body.light-mode #current-checklist-title {
-            color: #000000;
-        }
-        .text-gray-200 {
-            color: #f5f5dc;
-        }
-        body.light-mode .text-gray-200 {
-            color: #000000;
+        .dark .email-container {
+            border: 1px solid var(--accent-brown-dark);
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
+<!-- Added transition-colors for smooth mode change -->
+<body class="min-h-screen p-4 sm:p-8 transition-colors duration-300"> 
 
-    <div class="container rounded-lg shadow-xl p-8 relative">
-        <button id="theme-toggle" class="theme-toggle-button">
-            <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M17.293 17.293a1 1 0 01-1.414-1.414l2-2a1 1 0 011.414 1.414l-2 2zM3 10a7 7 0 1114 0A7 7 0 013 10z" clip-rule="evenodd" fill-rule="evenodd" />
-            </svg>
-            <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zM14.586 4.586a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM14.586 15.414a1 1 0 01-1.414 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.414zM10 17a1 1 0 01-1 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.414 15.414a1 1 0 010-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM3 10a1 1 0 011 1h1a1 1 0 110-2H4a1 1 0 01-1 1zM5.414 4.586a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414z" clip-rule="evenodd" fill-rule="evenodd" />
-            </svg>
-        </button>
-        <div class="flex flex-col items-center justify-center mb-8">
-            <div class="flex items-center space-x-4 mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H10z" clip-rule="evenodd" />
-                </svg>
-                <h1 class="text-3xl font-bold text-white">T2 OS Cancellations & Returns Checklist</h1>
-            </div>
-            <p class="text-gray-400 text-center">Your personalized dashboard to create and manage checklists for your team's daily tasks.</p>
-        </div>
-
-        <!-- Login Form -->
-        <div id="login-form-container" class="mb-6">
-            <h2 class="text-2xl font-semibold text-gray-200 mb-4">Admin Login</h2>
-            <form id="login-form" class="flex flex-col space-y-4">
-                <input type="email" id="email-input" placeholder="Email" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="password" id="password-input" placeholder="Password" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Log In</button>
-                <a href="#" id="forgot-password-link" class="text-center text-sm text-blue-400 hover:text-blue-300">Forgot Password?</a>
-            </form>
-        </div>
-
-        <div id="user-info" class="text-sm text-gray-400 mb-4 rounded-md p-2 bg-gray-800 hidden flex items-center justify-between">
-            <p>Logged in as: <span id="user-email" class="font-medium text-gray-200"></span></p>
-            <button id="logout-btn" class="text-xs text-red-400 hover:text-red-300 font-semibold transition-colors">Log Out</button>
-        </div>
-        
-        <div id="loading" class="text-center p-8 text-gray-500 font-medium">
-            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p class="mt-2">Connecting to the dashboard...</p>
-        </div>
-
-        <!-- Checklists Section -->
-        <div id="checklist-section" class="hidden">
-            <div class="mb-6">
-                <label for="checklist-selector" class="block text-sm font-medium text-gray-300 mb-2">Select a Process Checklist:</label>
-                <select id="checklist-selector" class="block w-full rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
-                    <option value="subscription-cancellation">Subscription Cancellation</option>
-                     <option value="membership-pause">Membership Pause</option>
-                    <option value="returns">Returns</option>
-                    <option value="order-cancellations">Order Cancellations</option>
-                    <option value="downgrades">Downgrades</option>
-                    <option value="sales">Sales</option>
-                    <option value="winback-outreach">Winback Outreach</option>
-                </select>
-            </div>
-
-            <!-- Admin Options (Conditional Visibility) -->
-            <div id="admin-options" class="hidden">
-                <form id="add-task-form" class="mb-4 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                    <input type="text" id="new-task-input" placeholder="Add a new task..." class="flex-1 rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required>
-                    <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Add Task</button>
-                </form>
-            </div>
-
-            <!-- Ticket Link Input -->
-            <div class="mb-6">
-                <label for="ticket-link-input" class="block text-sm font-medium text-gray-300 mb-2">Ticket Link:</label>
-                <input type="url" id="ticket-link-input" placeholder="Paste ticket link here..." class="block w-full rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required>
-            </div>
+    <div class="max-w-4xl mx-auto">
+        <!-- Added 'relative' to position the toggle button -->
+        <header class="text-center mb-8 relative">
+            <!-- Dark Mode Toggle Button -->
+            <button onclick="toggleTheme()" class="absolute right-0 top-0 p-2 text-gray-700 dark:text-gray-300 hover:text-accent-brown dark:hover:text-accent-brown-light transition duration-150 rounded-full">
+                <i id="theme-icon" data-lucide="moon" class="w-6 h-6"></i>
+            </button>
             
-            <div class="bg-gray-800 rounded-lg p-6 max-h-[400px] overflow-y-auto task-list-container">
-                <h2 class="text-xl font-semibold text-gray-200 mb-4" id="current-checklist-title">Current Checklist Items</h2>
-                <div id="task-list" class="space-y-4">
-                    <!-- Checklist items will be dynamically added here -->
+            <!-- Logo color updated to the new accent brown -->
+            <div class="flex items-center justify-center space-x-2 text-accent-brown">
+                <i data-lucide="shield-check" class="w-8 h-8"></i>
+                <h1 class="text-3xl font-extrabold text-gray-800 dark:text-white">RetentionBot AI</h1>
+            </div>
+            <p class="text-gray-500 mt-2 dark:text-gray-300">Generate tailored customer save strategies instantly.</p>
+        </header>
+
+        <!-- Main Input and Control Area -->
+        <div id="input-section" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-300/50 dark:border-gray-700/50 transition-colors duration-300">
+            <!-- New Input Fields -->
+            <div class="space-y-4 mb-6">
+                <!-- Row 1: Cancellation Type and LTV -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="cancellationType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cancellation Type</label>
+                        <select id="cancellationType" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-accent-brown focus:border-accent-brown p-3 text-gray-800 dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                            <option value="Membership">Membership Cancellation (Subscription/App Access)</option>
+                            <option value="Order/Return">Order or Return Request (Studio/Move Hardware)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="ltvTier" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Customer LTV Tier</label>
+                        <select id="ltvTier" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-accent-brown focus:border-accent-brown p-3 text-gray-800 dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                            <option value="Average">Average LTV</option>
+                            <option value="Low">Low LTV / New Customer</option>
+                            <option value="High/VIP">High LTV / VIP Customer (Prioritize Retention)</option>
+                        </select>
+                    </div>
                 </div>
-                <div id="empty-state" class="text-center text-gray-500 p-8 hidden">
-                    <p>No checklist items found. Add a new task to get started!</p>
+
+                <!-- Row 2: Product Ownership Checkboxes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Products Owned (For Targeted Features)</label>
+                    <div class="flex flex-wrap gap-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div class="flex items-center">
+                            <input id="ownsStudio" type="checkbox" value="Studio" class="h-4 w-4 text-accent-brown border-gray-300 rounded focus:ring-accent-brown dark:bg-gray-600 dark:border-gray-500">
+                            <label for="ownsStudio" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Studio</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="ownsMove" type="checkbox" value="Move" class="h-4 w-4 text-accent-brown border-gray-300 rounded focus:ring-accent-brown dark:bg-gray-600 dark:border-gray-500">
+                            <label for="ownsMove" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Move</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="ownsBYOD" type="checkbox" value="BYOD" class="h-4 w-4 text-accent-brown border-gray-300 rounded focus:ring-accent-brown dark:bg-gray-600 dark:border-gray-500" checked>
+                            <label for="ownsBYOD" class="ml-2 text-sm text-gray-700 dark:text-gray-300">BYOD (App Only)</label>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Agent Options (Conditional Visibility) -->
-            <div id="agent-options" class="flex justify-center mt-6 hidden">
-                <button id="suggest-task-btn" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Suggest a Task</button>
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-white border-b pb-2 dark:border-accent-brown">Context & Strategy Focus</h2>
+            
+            <div class="space-y-4 mb-6">
+                <!-- Cancellation Reason -->
+                <div>
+                    <label for="cancellationReason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Customer's Reason for Cancelling</label>
+                    <textarea id="cancellationReason" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-accent-brown focus:border-accent-brown p-3 text-gray-800 dark:bg-gray-700 dark:text-white dark:border-gray-600" placeholder="e.g., 'Price too high, competitor X is cheaper,' or 'Doesn't use Feature Y enough.'"></textarea>
+                </div>
+
+                <!-- Customer History -->
+                <div>
+                    <label for="customerHistory" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Customer Tenure and History</label>
+                    <textarea id="customerHistory" rows="2" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-accent-brown focus:border-accent-brown p-3 text-gray-800 dark:bg-gray-700 dark:text-white dark:border-gray-600" placeholder="e.g., '5 years, high LTV, 0 support tickets,' or '2 months, low usage, 5 recent billing complaints.'"></textarea>
+                </div>
+                
+                <!-- Strategy Focus -->
+                <div>
+                    <label for="strategyFocus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Desired Strategy Focus</label>
+                    <select id="strategyFocus" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-accent-brown focus:border-accent-brown p-3 text-gray-800 dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                        <option value="Value-Focused">Value-Focused (Focus on hidden benefits/ROI)</option>
+                        <option value="Discount-Focused">Discount-Focused (Prioritize price reduction offers)</option>
+                        <option value="Product-Focused">Product-Focused (Solve a feature/usability issue)</option>
+                        <option value="Motivation/Minimum Discount">Motivation/Minimum Discount (Re-engage with product, minor concession)</option>
+                        <option value="Inspirational/Product Value/Tailored Discount">Inspirational/Product Value/Tailored Discount (Aspirational fitness goal + targeted offer)</option>
+                        <option value="Empathetic/Motivational/Product Value">Empathetic/Motivational/Product Value (High empathy, low financial offer, strong re-pitch)</option>
+                        <option value="Motivational/Fitness Expert/Tailored Features">Motivational/Fitness Expert/Tailored Features (High product knowledge, feature focus, fitness-first approach)</option>
+                        <option value="Pause-Retention">Pause/Retention (Temporary solution to save relationship)</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Submit Button -->
-            <div class="flex justify-center mt-6">
-                <button id="submit-ticket-btn" class="bg-green-600 text-white font-semibold rounded-lg p-3 hover:bg-green-500 transition-colors">Submit Ticket</button>
+            <!-- Button colors updated to brown accent, added pulse animation -->
+            <button onclick="generateStrategy()" id="generateButton" class="w-full bg-accent-brown text-white py-3 rounded-lg font-semibold hover:bg-accent-brown-dark transition duration-150 shadow-md flex items-center justify-center disabled:bg-accent-brown-light pulse-on-hover">
+                <i data-lucide="sparkles" class="w-5 h-5 mr-2"></i>
+                Generate Save Strategies
+            </button>
+            
+            <!-- Loading indicator color updated to brown accent -->
+            <div id="loadingIndicator" class="hidden mt-4 text-center text-accent-brown font-medium">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-4 border-accent-brown border-t-transparent mr-2"></div>
+                Analyzing data and generating personalized scripts...
             </div>
+            
+            <p id="errorMessage" class="hidden mt-4 text-center text-red-600 font-medium"></p>
+        </div>
 
+        <!-- Output Area for Strategies (Step 1) -->
+        <div id="output-section" class="mt-8">
+            <!-- Strategies will be inserted here -->
         </div>
-    </div>
-    
-    <!-- Modals -->
-    <div id="suggestion-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal('suggestion-modal')">&times;</span>
-            <h2 class="text-xl font-bold mb-4">Suggest a Task</h2>
-            <form id="suggestion-form" class="flex flex-col space-y-4">
-                <select id="suggestion-process" class="block w-full rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
-                    <option value="subscription-cancellation">Subscription Cancellation</option>
-                    <option value="membership-pause">Membership Pause</option>
-                    <option value="returns">Returns</option>
-                    <option value="order-cancellations">Order Cancellations</option>
-                    <option value="downgrades">Downgrades</option>
-                    <option value="sales">Sales</option>
-                    <option value="winback-outreach">Winback Outreach</option>
-                </select>
-                <textarea id="suggestion-text" rows="4" placeholder="Enter your suggestion here..." class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required></textarea>
-                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Submit Suggestion</button>
-            </form>
-        </div>
+
     </div>
 
-    <!-- Password Reset Modal -->
-    <div id="password-reset-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal('password-reset-modal')">&times;</span>
-            <h2 class="text-xl font-bold mb-4">Reset Password</h2>
-            <form id="password-reset-form" class="flex flex-col space-y-4">
-                <input type="email" id="password-reset-email" placeholder="Enter your email" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Send Reset Link</button>
-            </form>
-        </div>
-    </div>
-    
-    <div id="message-box" class="message-box text-white"></div>
+    <script>
+        const API_KEY = "AIzaSyDHGPN_VAJI6f_Ehld1QW_dNbIUpRf33lM"; // API key inserted here
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=" + API_KEY;
+        const maxRetries = 3;
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-        
-        let db, auth, appId;
-        let unsubscribe = null;
-        let masterChecklists = {};
-        let userChecklists = {};
-        let userChecklistRef = null;
-        let userRole = 'guest';
+        // --- JSON Schema for Structured Output (NOW INCLUDES DRAFTED EMAIL) ---
+        const retentionSchema = {
+            type: "ARRAY",
+            description: "A list of 3 distinct customer retention strategies.",
+            items: {
+                type: "OBJECT",
+                properties: {
+                    "strategyName": { "type": "STRING", "description": "A concise, actionable title for the strategy (e.g., 'The Value Re-Pitch')." },
+                    "coreOffer": { "type": "STRING", "description": "The specific proposal to save the customer (e.g., '30% off for 3 months')." },
+                    "saveLikelihoodScore": { "type": "NUMBER", "description": "The AI's predicted save likelihood score for this strategy (1-5, where 5 is highest)." },
+                    "costToCompany": { "type": "STRING", "description": "The financial impact of the offer: Low, Medium, or High." },
+                    "talkingPoints": {
+                        "type": "ARRAY",
+                        "description": "3-5 scripted bullet points focusing on value and empathy for the agent to use, and incorporating relevant product recommendations or next steps.",
+                        "items": { "type": "STRING" }
+                    },
+                    "likelyRebuttal": { "type": "STRING", "description": "Anticipate a likely counter-argument from the customer." },
+                    "rebuttalResponse": { "type": "STRING", "description": "A prepared response to handle the rebuttal." },
+                    "complianceNote": { "type": "STRING", "description": "A quick note confirming the offer is within the bounds of the compensation guidelines."},
+                    "draftedEmail": { "type": "STRING", "description": "The complete, human-centered winback email copy (Subject Line and Body), formatted as plain text, ready for the agent to copy."}
+                },
+                required: ["strategyName", "coreOffer", "saveLikelihoodScore", "costToCompany", "talkingPoints", "likelyRebuttal", "rebuttalResponse", "complianceNote", "draftedEmail"],
+                propertyOrdering: ["strategyName", "coreOffer", "saveLikelihoodScore", "costToCompany", "talkingPoints", "likelyRebuttal", "rebuttalResponse", "complianceNote", "draftedEmail"]
+            }
+        };
 
-        // UI elements
-        const loading = document.getElementById('loading');
-        const checklistSection = document.getElementById('checklist-section');
-        const loginFormContainer = document.getElementById('login-form-container');
-        const userEmailDisplay = document.getElementById('user-email');
-        const userInfo = document.getElementById('user-info');
-        const addForm = document.getElementById('add-task-form');
-        const logoutBtn = document.getElementById('logout-btn');
-        const checklistSelector = document.getElementById('checklist-selector');
-        const suggestionForm = document.getElementById('suggestion-form');
-        const currentChecklistTitle = document.getElementById('current-checklist-title');
-        const taskList = document.getElementById('task-list');
-        const emptyState = document.getElementById('empty-state');
-        const adminOptions = document.getElementById('admin-options');
-        const agentOptions = document.getElementById('agent-options');
-        const newTaskInput = document.getElementById('new-task-input');
-        const suggestionProcess = document.getElementById('suggestion-process');
-        const suggestionText = document.getElementById('suggestion-text');
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const moonIcon = document.getElementById('moon-icon');
-        const sunIcon = document.getElementById('sun-icon');
-        const suggestionModal = document.getElementById('suggestion-modal');
-        const messageBox = document.getElementById('message-box');
-        const ticketLinkInput = document.getElementById('ticket-link-input');
-        const submitTicketBtn = document.getElementById('submit-ticket-btn');
-        const forgotPasswordLink = document.getElementById('forgot-password-link');
-        const passwordResetModal = document.getElementById('password-reset-modal');
-        const passwordResetForm = document.getElementById('password-reset-form');
+        // Global variables to store context between steps
+        let currentCancellationReason = '';
+        let currentCustomerHistory = '';
+        let currentCancellationType = '';
+        let currentStrategyFocus = '';
+        let currentLTVTier = '';
+        let currentProductsOwned = [];
 
-        function showMessage(message, type = 'success') {
-            messageBox.textContent = message;
-            messageBox.className = `message-box show ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
-            setTimeout(() => {
-                messageBox.classList.remove('show');
-            }, 3000);
+        // --- Theme Management ---
+        const THEME_KEY = 'retentionBotTheme';
+
+        function initTheme() {
+            let theme = localStorage.getItem(THEME_KEY);
+            if (!theme) {
+                theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            applyTheme(theme);
         }
 
-        async function initFirebaseAndApp() {
-            const firebaseConfig = {
-              apiKey: "AIzaSyDkKiTkVRFKYproZrT6i9MSEKS9kmhFQa0",
-              authDomain: "checklist-1b356.firebaseapp.com",
-              projectId: "checklist-1b356",
-              storageBucket: "checklist-1b356.firebasestorage.app",
-              messagingSenderId: "509961792596",
-              appId: "1:509961792596:web:dbfa4dc2541b97aff691c1",
-              measurementId: "G-0VZRDH8ENT"
-            };
-
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                appId = firebaseConfig.appId;
-                
-                await setPersistence(auth, browserLocalPersistence);
-                
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userEmailDisplay.textContent = user.email;
-                        loginFormContainer.classList.add('hidden');
-                        userInfo.classList.remove('hidden');
-
-                        const userDocRef = doc(db, `artifacts/${appId}/users`, user.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        userRole = userDocSnap.exists() ? userDocSnap.data().role : 'agent';
-                        
-                        updateUI(userRole);
-                        startListeningToMasterChecklists();
-                    } else {
-                        userEmailDisplay.textContent = '';
-                        loginFormContainer.classList.remove('hidden');
-                        userInfo.classList.add('hidden');
-                        checklistSection.classList.add('hidden');
-                        loading.classList.add('hidden');
-                    }
-                });
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                showMessage("Failed to connect to the dashboard. Please check your Firebase config.", "error");
-                loading.classList.add('hidden');
-                loginFormContainer.classList.remove('hidden');
-            }
-        }
-        
-        function updateUI(role) {
-            if (role === 'admin') {
-                if (adminOptions) adminOptions.classList.remove('hidden');
-                if (agentOptions) agentOptions.classList.add('hidden');
-            } else {
-                if (adminOptions) adminOptions.classList.add('hidden');
-                if (agentOptions) agentOptions.classList.remove('hidden');
-            }
-            if (checklistSection) {
-                checklistSection.classList.remove('hidden');
-            }
-            loading.classList.add('hidden');
-        }
-        
-        function renderChecklist(tasks) {
-            const currentChecklistName = checklistSelector.value;
-            currentChecklistTitle.textContent = `${checklistSelector.options[checklistSelector.selectedIndex].text} Checklist Items`;
-            taskList.innerHTML = '';
-            
-            const clearCompletedBtn = document.getElementById('clear-completed-btn');
-            
-            if (tasks.some(task => task.completed)) {
-                if (!clearCompletedBtn) {
-                    const btn = document.createElement('button');
-                    btn.id = 'clear-completed-btn';
-                    btn.textContent = 'Clear Completed';
-                    btn.className = 'bg-red-600 text-white font-semibold rounded-lg p-3 hover:bg-red-500 transition-colors mt-4 mx-auto block';
-                    btn.addEventListener('click', clearAllCheckboxes);
-                    taskList.parentElement.appendChild(btn);
-                }
-            } else if (clearCompletedBtn) {
-                clearCompletedBtn.remove();
-            }
-
-            if (tasks.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                tasks.forEach((task, index) => {
-                    const taskItem = document.createElement('div');
-                    const isCompleted = task.completed;
-                    const taskStatusClass = isCompleted ? 'completed' : 'text-gray-100';
-                    taskItem.className = `task-item flex items-center p-4 rounded-lg transition-colors relative ${isCompleted ? 'bg-gray-700 completed' : 'bg-gray-800 hover:bg-gray-700'}`;
-                    
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.className = 'task-checkbox';
-                    checkbox.dataset.index = index;
-                    if (isCompleted) checkbox.checked = true;
-
-                    checkbox.addEventListener('change', (e) => {
-                        toggleTaskStatus(e.target.dataset.index);
-                    });
-                    
-                    const taskText = document.createElement('p');
-                    taskText.className = `task-text ml-4 ${taskStatusClass} text-lg font-medium flex-1`;
-                    taskText.textContent = task.name;
-                    
-                    taskItem.appendChild(checkbox);
-                    taskItem.appendChild(taskText);
-
-                    if (userRole === 'admin') {
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.textContent = 'Delete';
-                        deleteBtn.className = 'delete-btn ml-4';
-                        deleteBtn.dataset.index = index;
-                        deleteBtn.addEventListener('click', (e) => {
-                            deleteTask(e.target.dataset.index);
-                        });
-                        taskItem.appendChild(deleteBtn);
-                    }
-                    taskList.appendChild(taskItem);
-                });
-            }
-        }
-        
-        async function startListeningToMasterChecklists() {
-            if (unsubscribe) {
-                unsubscribe();
-            }
-            const user = auth.currentUser;
-            if (!user) return;
-
-            const currentChecklistName = checklistSelector.value;
-            const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-            
-            unsubscribe = onSnapshot(masterChecklistRef, (masterDocSnap) => {
-                if (masterDocSnap.exists()) {
-                    masterChecklists[currentChecklistName] = masterDocSnap.data().tasks || [];
-                    
-                    // Now, get the user's specific checklist and merge
-                    const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
-                    onSnapshot(userDocRef, (userDocSnap) => {
-                        let userTasks;
-                        if (userDocSnap.exists()) {
-                            // Use the user's private checklist if it exists
-                            userTasks = userDocSnap.data().tasks || [];
-                        } else {
-                            // Otherwise, create a copy of the master checklist for the user
-                            userTasks = JSON.parse(JSON.stringify(masterChecklists[currentChecklistName]));
-                        }
-                        renderChecklist(userTasks);
-                        loading.classList.add('hidden');
-                        checklistSection.classList.remove('hidden');
-                    });
-                } else {
-                    renderChecklist([]);
-                }
-                loading.classList.add('hidden');
-                checklistSection.classList.remove('hidden');
-            }, (error) => {
-                console.error("Error listening to master checklist changes:", error);
-                showMessage("Failed to load master checklists. Check your Firestore security rules.", "error");
-            });
-        }
-        
-        async function toggleTaskStatus(taskIndex) {
-            try {
-                const user = auth.currentUser;
-                const currentChecklistName = checklistSelector.value;
-                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
-                
-                await runTransaction(db, async (transaction) => {
-                    const userDocSnap = await transaction.get(userDocRef);
-                    let userTasks;
-
-                    if (!userDocSnap.exists()) {
-                        const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                        const masterDocSnap = await getDoc(masterChecklistRef);
-                        const masterTasks = masterDocSnap.exists() ? masterDocSnap.data().tasks : [];
-                        userTasks = JSON.parse(JSON.stringify(masterTasks));
-                        transaction.set(userDocRef, { tasks: userTasks });
-                    } else {
-                        userTasks = userDocSnap.data().tasks;
-                    }
-                    
-                    userTasks[taskIndex].completed = !userTasks[taskIndex].completed;
-                    transaction.update(userDocRef, { tasks: userTasks });
-                });
-                showMessage("Task status updated!");
-            } catch (error) {
-                console.error("Error updating task status:", error);
-                showMessage("Failed to update task status.", "error");
-            }
-        }
-        
-        async function clearAllCheckboxes() {
-            try {
-                const user = auth.currentUser;
-                const currentChecklistName = checklistSelector.value;
-                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
-                const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                const masterDocSnap = await getDoc(masterChecklistRef);
-                const masterTasks = masterDocSnap.exists() ? masterDocSnap.data().tasks : [];
-
-                await setDoc(userDocRef, { tasks: masterTasks });
-
-                showMessage("Checkboxes cleared!");
-            } catch (error) {
-                console.error("Error clearing checkboxes:", error);
-                showMessage("Failed to clear checkboxes.", "error");
-            }
-        }
-
-        async function addTask(e) {
-            e.preventDefault();
-            const taskName = newTaskInput.value.trim();
-            if (!taskName) return;
-            
-            try {
-                const currentChecklistName = checklistSelector.value;
-                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                const tasks = masterChecklists[currentChecklistName] || [];
-                const newTasks = [...tasks, { name: taskName, completed: false }];
-                await updateDoc(checklistRef, { tasks: newTasks });
-                newTaskInput.value = '';
-                showMessage("Task added to master checklist!");
-            } catch (error) {
-                console.error("Error adding task:", error);
-                showMessage("Failed to add task.", "error");
-            }
-        }
-
-        async function deleteTask(taskIndex) {
-            try {
-                const currentChecklistName = checklistSelector.value;
-                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
-                const tasks = masterChecklists[currentChecklistName];
-                const updatedTasks = tasks.filter((_, index) => index != taskIndex);
-                await updateDoc(checklistRef, { tasks: updatedTasks });
-                showMessage("Task deleted from master checklist!");
-            } catch (error) {
-                console.error("Error deleting task:", error);
-                showMessage("Failed to delete task.", "error");
-            }
-        }
-        
-        async function handleLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('email-input').value;
-            const password = document.getElementById('password-input').value;
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                showMessage("Login successful!");
-            } catch (error) {
-                console.error("Login failed:", error);
-                showMessage("Login failed. Check your email and password.", "error");
-            }
-        }
-
-        async function handlePasswordReset(e) {
-            e.preventDefault();
-            const email = document.getElementById('password-reset-email').value;
-            try {
-                await sendPasswordResetEmail(auth, email);
-                showMessage("Password reset email sent. Check your inbox.");
-                closeModal('password-reset-modal');
-            } catch (error) {
-                console.error("Password reset failed:", error);
-                showMessage(`Failed to send reset email: ${error.message}`, 'error');
-            }
-        }
-
-        async function handleLogout() {
-            try {
-                await signOut(auth);
-                showMessage("Logged out successfully.");
-            } catch (error) {
-                console.error("Logout failed:", error);
-                showMessage("Logout failed.", "error");
-            }
-        }
-        
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-        
-        async function submitSuggestion(e) {
-            e.preventDefault();
-            const process = suggestionProcess.value;
-            const suggestion = suggestionText.value;
-            const user = auth.currentUser;
-            
-            if (!user) {
-                showMessage("You must be logged in to submit a suggestion.", "error");
-                closeModal('suggestion-modal');
-                return;
-            }
-            
-            const suggestionData = {
-                process: process,
-                suggestion: suggestion,
-                submittedBy: user.email,
-                submittedAt: new Date()
-            };
-
-            try {
-                const suggestionsCollectionRef = collection(db, `artifacts/${appId}/public/data/suggestions`);
-                await addDoc(suggestionsCollectionRef, suggestionData);
-                showMessage("Suggestion submitted! Thank you for your feedback.");
-                closeModal('suggestion-modal');
-                suggestionForm.reset();
-            } catch (error) {
-                console.error("Error submitting suggestion:", error);
-                showMessage(`Failed to submit suggestion: ${error.message}`, "error");
-            }
-        }
-
-        async function submitTicket(e) {
-            e.preventDefault();
-            const ticketLink = ticketLinkInput.value.trim();
-            if (!ticketLink) {
-                showMessage("Please enter a ticket link.", "error");
-                return;
-            }
-            
-            const user = auth.currentUser;
-            if (!user) {
-                showMessage("You must be logged in to submit a ticket.", "error");
-                return;
-            }
-            
-            const urlMatch = ticketLink.match(/\/conversation\/(\d+)/);
-            const ticketId = urlMatch ? urlMatch[1] : null;
-
-            if (!ticketId) {
-                showMessage("Please enter a valid Freshworks ticket link containing a conversation ID.", "error");
-                return;
-            }
-            
-            const currentChecklistName = checklistSelector.value;
-            const userChecklistRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
-            const userDocSnap = await getDoc(userChecklistRef);
-            
-            if (!userDocSnap.exists()) {
-                showMessage("No checklist found to submit. Please select a checklist and check some tasks.", "error");
-                return;
-            }
-            
-            const ticketData = {
-                ticketId: ticketId,
-                ticketLink: ticketLink,
-                checklistName: currentChecklistName,
-                tasks: userDocSnap.data().tasks,
-                submittedAt: new Date(),
-                submittedBy: user.email
-            };
-
-            const ticketDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/tickets/${ticketId}`);
-
-            try {
-                await setDoc(ticketDocRef, ticketData);
-                showMessage("Ticket submitted successfully! Checklist has been cleared for the next ticket.");
-                clearAllCheckboxes();
-                ticketLinkInput.value = '';
-            } catch (error) {
-                console.error("Error submitting ticket:", error);
-                showMessage(`Failed to submit ticket: ${error.message}`, "error");
-            }
-        }
-        
         function applyTheme(theme) {
             const body = document.body;
-            const isDarkMode = theme === 'dark';
-            body.classList.toggle('light-mode', !isDarkMode);
-            if(moonIcon) moonIcon.classList.toggle('hidden', !isDarkMode);
-            if(sunIcon) sunIcon.classList.toggle('hidden', isDarkMode);
-            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+            if (theme === 'dark') {
+                body.classList.add('dark');
+                localStorage.setItem(THEME_KEY, 'dark');
+            } else {
+                body.classList.remove('dark');
+                localStorage.setItem(THEME_KEY, 'light');
+            }
+            updateThemeIcon(theme);
+            lucide.createIcons();
         }
 
-        function getPreferredTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                return savedTheme;
-            }
-            return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        function toggleTheme() {
+            const currentTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            applyTheme(newTheme);
         }
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            const preferredTheme = getPreferredTheme();
-            applyTheme(preferredTheme);
-            initFirebaseAndApp();
-            
-            const loginForm = document.getElementById('login-form');
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleLogin);
-            }
-            
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', handleLogout);
-            }
 
-            if(suggestionForm) {
-                suggestionForm.addEventListener('submit', submitSuggestion);
-            }
-            
-            if (checklistSelector) {
-                checklistSelector.addEventListener('change', startListeningToMasterChecklists);
-            }
-            
-            if(addForm){
-                 addForm.addEventListener('submit', addTask);
-            }
-            
-            const suggestTaskBtn = document.getElementById('suggest-task-btn');
-            if(suggestTaskBtn){
-                suggestTaskBtn.addEventListener('click', () => {
-                    document.getElementById('suggestion-modal').style.display = 'block';
-                });
-            }
-            
-            if(submitTicketBtn){
-                submitTicketBtn.addEventListener('click', submitTicket);
-            }
-
-            if(forgotPasswordLink){
-                forgotPasswordLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    document.getElementById('password-reset-modal').style.display = 'block';
-                });
-            }
-            
-            if(passwordResetForm){
-                passwordResetForm.addEventListener('submit', handlePasswordReset);
-            }
-            
-            const closeButtons = document.querySelectorAll('.close-button');
-            closeButtons.forEach(btn => btn.addEventListener('click', () => {
-                btn.closest('.modal').style.display = 'none';
-            }));
-            
-            window.addEventListener('click', (e) => {
-                if (e.target.classList.contains('modal')) {
-                    e.target.style.display = 'none';
+        function updateThemeIcon(theme) {
+            const iconElement = document.getElementById('theme-icon');
+            if (iconElement) {
+                if (iconElement.querySelector('svg')) {
+                    iconElement.innerHTML = '';
                 }
-            });
-             if(themeToggleBtn){
-                themeToggleBtn.addEventListener('click', () => {
-                    const currentTheme = getPreferredTheme();
-                    applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
-                });
+                iconElement.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
             }
+        }
+
+
+        // --- Core Functions ---
+
+        /**
+         * Sets the state of the UI elements (loading, button, error).
+         * @param {boolean} isLoading - Whether the application is currently loading.
+         * @param {string|null} error - The error message to display, if any.
+         * @param {string} mode - 'strategy' or 'email' to control which loading/error indicator is used.
+         */
+        function setUIState(isLoading, error = null, mode = 'strategy') {
+            const button = document.getElementById('generateButton');
+            const loading = document.getElementById('loadingIndicator'); // Only one loading indicator now
+            const errorMsg = document.getElementById('errorMessage');
+
+            // Strategy mode controls everything
+            button.disabled = isLoading;
+            button.classList.toggle('opacity-50', isLoading);
+            
+            loading.classList.toggle('hidden', !isLoading);
+            
+            errorMsg.classList.add('hidden');
+            if (error) {
+                errorMsg.textContent = error;
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Calls the Gemini API with exponential backoff for retries.
+         * @param {object} payload - The API request body.
+         * @param {string} mode - 'strategy' or 'email' to control error messaging.
+         * @returns {Promise<any>} - The parsed JSON array or raw text response.
+         */
+        async function fetchAIContent(payload) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429 && i < maxRetries - 1) {
+                            const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        const errorData = await response.json();
+                        throw new Error(`API Request failed: ${errorData.error?.message || response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (!content) {
+                         throw new Error("Received an empty or malformed response from the AI model.");
+                    }
+                    
+                    return JSON.parse(content);
+
+                } catch (e) {
+                    console.error(`Attempt ${i + 1} failed:`, e);
+                    if (i === maxRetries - 1) {
+                        throw new Error(e.message);
+                    }
+                }
+            }
+        }
+
+        /**
+         * Handles the main logic for generating the retention strategy (Step 1 - now consolidated).
+         */
+        async function generateStrategy() {
+            setUIState(true);
+            document.getElementById('output-section').innerHTML = '';
+
+            // Store context globally
+            currentCancellationReason = document.getElementById('cancellationReason').value.trim();
+            currentCustomerHistory = document.getElementById('customerHistory').value.trim();
+            currentStrategyFocus = document.getElementById('strategyFocus').value;
+            currentCancellationType = document.getElementById('cancellationType').value;
+            currentLTVTier = document.getElementById('ltvTier').value;
+
+            // Get checked products
+            currentProductsOwned = Array.from(document.querySelectorAll('#input-section input[type="checkbox"]:checked')).map(cb => cb.value);
+
+
+            if (!currentCancellationReason || !currentCustomerHistory) {
+                setUIState(false, "Please fill in both the reason for cancellation and customer history.");
+                return;
+            }
+
+            if (API_KEY === "") {
+                setUIState(false, "API Configuration Error: The AI service failed to authenticate.");
+                return;
+            }
+
+            // --- ALL ATTACHED DATA AS KNOWLEDGE BASE (MERGED with WinBack Tool Kit) ---
+            const concessionData = `
+                --- COMPLIANCE & COMPENSATION RULES (HARD LIMITS & WISDOM) ---
+                
+                // --- MEMBERSHIP CANCELLATION RULES (SUBSCRIPTION) ---
+                - Financial/Affordability (Membership): Initial offer should be **low-tier** (1 Month free OR 25% for 4 months). Maximum offer is 50% for 3 months OR 25% for 6 months. **DO NOT EXCEED MAXIMUM.** Offer concessions as options, not bundled.
+                - Pause Policy: Standard **3 months max per calendar year**. Extensions possible for severe reasons (e.g., pregnancy, medical injury, severe travel) based on case severity.
+                - Lack of motivation/Suitable classes (Membership): Offer **accessory < $30** OR 1 Month free. Recommend accessory giveaway for unmotivated customers.
+                - BYOD/Tempo Trainer: Follow above Membership rules. Tempo Trainer members may receive a Giftbox.
+
+                // --- ORDER / RETURN CANCELLATION RULES (HARDWARE/STUDIO/MOVE) ---
+                - Financial (Studio/Hardware): Up to 2 months subscription credit OR discount + Giftbox ($100+ after approval). Can offer 50% discount for 4 months max or pause.
+                - Delivery delays (Studio): 2 weeks past ETA: 1 Month free. 4 weeks past ETA: 2 Months free (accessories giveaway after approval only).
+                - Delivery delays/other return reasons (Move): Up to 1 month subscription credit + accessory < $30.
+                - Returning for Wrong color unit (Studio): $100 up to $300 refund OR subscription discount up to 3 months.
+
+                --- WINBACK TOOLKIT FRAMEWORK (PERSONALIZATION FOR MEMBERSHIP) ---
+                
+                // Winback Patterns for Injury/Dormancy (Membership Focus):
+                - Pattern A ("Active before injury"): Focus on strength built. Offer recovery tools (phone-only, 10-15m classes, injury mods). Use offer: Tempo Bands set + 25% off for 4 months.
+                - Pattern B ("Long-time member but dormant"): Focus on no-judgment, easy restart. Highlight 10-15 min sessions. Use Offer: Tempo Bands set + 25% off for 4 months.
+                - Pattern C ("New member - barely used, injured"): Focus on bad timing. Highlight short, safe ways to try. Use offer: 1 free month or 50% off for 2 months + yoga starter kit.
+                - Pattern D ("Started strong then lost motivation"): Focus on nostalgia, reclaiming spark. Highlight low-impact flows, micro-sessions. Use offer: yoga kit + 25% off for 3 months.
+
+                --- CONTENT & ACCESSORIES (FOR RECOMMENDATIONS) ---
+
+                - Accessories (Must cost < $30): Workout Mat ($30), Resistance Bands Set ($21.95), Wrist Heart Rate Monitor ($39 - DO NOT OFFER THIS, only below $30), Yoga Starter Kit (Strap, Block, Roller - Ensure final item value is kept under $30).
+                - Recovery & Low-Impact Programs: Improved Mobility, Stretch/Meditate/Recover, Beginner’s Yoga, Phone-Only Mode, 10-Min Meditation, Low-impact search filter.
+                - Strength & Habit Programs: Foundations of Growth, Complete Core, Metabolic Meltdown, 2 Weeks to a Healthier Me.
+
+                --- POLICY REFERENCE ---
+                - Policies are governed by: Cancellations & Returns, Tempo Move FAQs, Tempo Experience FAQs, Product Specs.
+            `;
+
+
+            // --- CONSOLIDATED SYSTEM PROMPT (STRATEGY + EMAIL) ---
+            const systemPrompt = `You are a **highly experienced, innovative Customer Retention and Marketing Strategist and Human-Centered Copywriter** for a premium fitness company (Tempo). Your core duty is to generate **exceptionally unique, highly personalized strategies, AND the final email copy** in a single structured output.
+
+            **KNOWLEDGE BASE:**
+            ${concessionData}
+            
+            **CURRENT CUSTOMER CONTEXT:**
+            - LTV Tier: ${currentLTVTier}
+            - Products Owned: ${currentProductsOwned.join(', ')}
+            - Strategy Focus: ${currentStrategyFocus}
+
+            **Internal 4-Phase Process (Strategy & Email Creation):**
+            1. **PHASE 1 (Strategy Generation):** Create 3 initial draft strategies using the provided data, ensuring compliance with HARD LIMITS.
+            2. **PHASE 2 (Expert Review & Refinement):** Critique the 3 drafts internally based on Tempo Value Alignment, Creative Product Leverage, Marketing Hook, and LTV Consideration (adjusting save likelihood and offer level).
+            3. **PHASE 3 (Email Copywriting):** For *each* refined strategy, immediately write the final, high-conversion, customer-centric email copy (200-250 words max).
+                - **Email Tone:** Natural, human, empathetic, and non-judgmental. Use contractions.
+                - **Email Content:** Reference Customer History/Reason. Smoothly integrate the 'likelyRebuttal' and 'rebuttalResponse' as a preemptive defense. Clearly present the 'Core Offer' and Call to Action.
+                - **Email Format:** The email should start with the **Subject Line**, followed by the **Body**. Use clean, plain text. Store this entire block in the **\`draftedEmail\`** property.
+            4. **PHASE 4 (Final Output):** Take the refined strategies and their corresponding emails and output them concisely into the final JSON array.
+
+            **Retention Rules & Guidelines for Final Output:**
+            1. **Conciseness is Critical:** Generate all text fields **as concisely as possible** for every property (e.g., coreOffer, talkingPoints, etc.).
+            2. **Compliance is Mandatory:** The 'coreOffer' and 'complianceNote' fields **MUST** strictly adhere to the compensation rules (HARD LIMITS).
+            3. **Strategy Type Differentiation:**
+               - If **Cancellation Type is 'Membership'**: Focus on re-engagement (Fitness First), supported by a compliant concession.
+               - If **Cancellation Type is 'Order/Return'**: Focus on de-escalation, solving hardware/logistics issue, and offering compliant credits/refunds/gifts.
+            4. The final output must be a valid JSON array matching the provided schema, with no surrounding text or markdown.
+            `;
+            
+            const userQuery = `Customer Cancellation Reason: ${currentCancellationReason}.
+            Customer Tenure/History: ${currentCustomerHistory}.
+            
+            Generate 3 retention strategies now, ranked by highest predicted Save Likelihood.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: retentionSchema
+                }
+            };
+
+            try {
+                // Fetching the strategies and emails in one go
+                const strategies = await fetchAIContent(payload);
+                
+                // Sort strategies by save likelihood score, highest first (as requested by prompt)
+                strategies.sort((a, b) => b.saveLikelihoodScore - a.saveLikelihoodScore);
+                displayStrategies(strategies);
+            } catch (e) {
+                setUIState(false, e.message);
+            } finally {
+                setUIState(false);
+            }
+        }
+
+        /**
+         * Generates the star rating HTML based on the score.
+         * @param {number} score - The save likelihood score (1-5).
+         * @returns {string} HTML string for stars.
+         */
+        function renderStars(score) {
+            const roundedScore = Math.round(score);
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                const color = i <= roundedScore ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600';
+                stars += `<i data-lucide="star" class="w-4 h-4 fill-current ${color}"></i>`;
+            }
+            return stars;
+        }
+
+        /**
+         * Copies the email text to the user's clipboard.
+         * @param {string} emailText - The raw text of the drafted email.
+         */
+        function copyEmailToClipboard(emailText, buttonElement) {
+            // Use execCommand for broader compatibility in iframe environments
+            const textArea = document.createElement("textarea");
+            textArea.value = emailText;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                const msg = successful ? 'Copied successfully!' : 'Failed to copy.';
+                
+                // Show temporary success feedback on the button
+                const originalText = buttonElement.innerHTML;
+                buttonElement.innerHTML = `<i data-lucide="check" class="w-5 h-5 mr-2"></i> ${msg}`;
+                
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalText;
+                    lucide.createIcons();
+                }, 1500);
+
+            } catch (err) {
+                console.error('Copy command failed:', err);
+                alert('Copy failed. Please manually select and copy the text.'); // Fallback alert kept for dev/test context
+            } finally {
+                document.body.removeChild(textArea);
+                lucide.createIcons();
+            }
+        }
+
+        /**
+         * Renders the generated strategies into the output area.
+         * @param {Array<object>} strategies - The array of structured retention strategies.
+         */
+        function displayStrategies(strategies) {
+            const outputDiv = document.getElementById('output-section');
+            outputDiv.innerHTML = `
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 border-b-2 border-accent-brown/50 dark:border-accent-brown/70 pb-2 transition-colors duration-300">Generated Retention Plan</h2>
+            `;
+
+            if (!Array.isArray(strategies) || strategies.length === 0) {
+                 outputDiv.innerHTML += '<p class="text-red-500">Could not parse the strategies. Please try a different prompt or check the console for API errors.</p>';
+                 return;
+            }
+
+
+            strategies.forEach((strategy, index) => {
+                const strategyElement = document.createElement('div');
+                strategyElement.classList.add('bg-white', 'dark:bg-gray-800', 'p-6', 'rounded-xl', 'shadow-xl', 'mb-8', 'mt-4', 'border-l-4', 'border-accent-brown', 'transition-colors', 'duration-300');
+
+                // Dynamic background colors updated for brown/sleek theme
+                const titleColorMap = {
+                    0: 'bg-accent-brown-light/60 dark:bg-accent-brown-dark/50',
+                    1: 'bg-gray-200 dark:bg-gray-700/50',
+                    2: 'bg-green-50/60 dark:bg-green-900/50'
+                };
+                const titleColor = titleColorMap[index % 3];
+                const iconName = ['trending-up', 'check-circle', 'refresh-cw'][index % 3];
+                
+                const saveStars = renderStars(strategy.saveLikelihoodScore);
+                const costBadgeColor = strategy.costToCompany === 'High' ? 'bg-red-500' : 
+                                       strategy.costToCompany === 'Medium' ? 'bg-yellow-500' : 'bg-green-500';
+                
+                // Splitting email into subject and body for better display
+                const emailParts = strategy.draftedEmail.split('\n\n');
+                const subjectLine = emailParts[0];
+                const emailBody = emailParts.slice(1).join('\n\n');
+
+                // Create a unique ID for the copy button for easy reference
+                const copyButtonId = `copyBtn-${index}`;
+
+                strategyElement.innerHTML = `
+                    <div class="flex items-center space-x-3 mb-4 p-3 rounded-lg ${titleColor}">
+                        <i data-lucide="${iconName}" class="w-6 h-6 text-accent-brown dark:text-accent-brown-light"></i>
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-white">${strategy.strategyName}</h3>
+                        ${index === 0 ? '<span class="ml-auto px-3 py-1 text-xs font-bold uppercase rounded-full bg-accent-brown text-white">Recommended</span>' : ''}
+                    </div>
+
+                    <div class="space-y-6">
+                        
+                        <!-- Scorecard Row -->
+                        <div class="grid grid-cols-2 gap-4 text-center border-b pb-4 border-gray-200 dark:border-gray-700">
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">Save Likelihood</p>
+                                <div class="flex justify-center space-x-1">${saveStars}</div>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">Cost to Company</p>
+                                <span class="px-3 py-1 text-xs font-bold rounded-full text-white ${costBadgeColor}">${strategy.costToCompany.toUpperCase()}</span>
+                            </div>
+                        </div>
+
+                        <!-- Core Offer -->
+                        <div class="p-4 bg-accent-brown-light/40 dark:bg-accent-brown-dark/70 border border-accent-brown-light/80 dark:border-accent-brown-dark rounded-lg">
+                            <p class="text-sm font-semibold text-accent-brown-dark dark:text-accent-brown-light">CORE SAVE OFFER:</p>
+                            <p class="text-lg font-medium text-gray-800 dark:text-white mt-1">${strategy.coreOffer}</p>
+                            <p class="text-xs text-accent-brown dark:text-accent-brown-light mt-2 font-medium">Compliance Note: ${strategy.complianceNote}</p>
+                        </div>
+
+                        <!-- Talking Points -->
+                        <div>
+                            <p class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2 flex items-center">
+                                <i data-lucide="message-square" class="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400"></i>
+                                Agent Talking Points (Fitness & Value Focus)
+                            </p>
+                            <ul class="list-none space-y-2 text-gray-700 dark:text-white">
+                                ${strategy.talkingPoints.map(point => 
+                                    `<li class="flex items-start">
+                                        <i data-lucide="chevron-right" class="w-4 h-4 mt-1 mr-2 text-accent-brown dark:text-accent-brown-light flex-shrink-0"></i>
+                                        <span>${point}</span>
+                                    </li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- Rebuttal Handling -->
+                        <div class="p-4 bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                            <p class="text-sm font-semibold text-yellow-700 dark:text-yellow-300 mb-1 flex items-center">
+                                <i data-lucide="alert-triangle" class="w-4 h-4 mr-2 text-yellow-600 dark:text-yellow-400"></i>
+                                LIKELY CUSTOMER REBUTTAL
+                            </p>
+                            <p class="text-gray-700 italic dark:text-gray-200">"&quot;${strategy.likelyRebuttal}&quot;"</p>
+                            
+                            <p class="text-sm font-semibold text-green-700 dark:text-green-300 mt-3 mb-1 flex items-center">
+                                <i data-lucide="zap" class="w-4 h-4 mr-2 text-green-600 dark:text-green-400"></i>
+                                AGENT RESPONSE
+                            </p>
+                            <p class="text-gray-800 font-medium dark:text-white">${strategy.rebuttalResponse}</p>
+                        </div>
+
+                         <!-- Drafted Email Section (New Consolidated Output) -->
+                        <div class="mt-8">
+                            <h4 class="text-lg font-bold text-gray-800 dark:text-white mb-2 flex items-center border-b pb-1">
+                                <i data-lucide="mail" class="w-5 h-5 mr-2 text-accent-brown dark:text-accent-brown-light"></i>
+                                Full Winback Email Draft
+                            </h4>
+                            <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg email-container border-dashed border-2">
+                                <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Subject:</p>
+                                <p class="text-base font-bold text-gray-800 dark:text-white mb-3">${subjectLine}</p>
+                                <div class="text-gray-800 dark:text-white email-display">${emailBody}</div>
+                            </div>
+                            <!-- Copy button triggers copyEmailToClipboard with the full draftedEmail string -->
+                            <button onclick="copyEmailToClipboard(this.dataset.emailText, this)" id="${copyButtonId}" data-email-text="${strategy.draftedEmail.replace(/"/g, '&quot;')}" class="mt-3 w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-150 shadow-md flex items-center justify-center copy-pulse-on-hover">
+                                <i data-lucide="clipboard" class="w-5 h-5 mr-2"></i>
+                                Copy Complete Email
+                            </button>
+                        </div>
+                    </div>
+                `;
+                outputDiv.appendChild(strategyElement);
+                // Attach the strategy.draftedEmail directly to the button element for easy copying
+                document.getElementById(copyButtonId).dataset.emailText = strategy.draftedEmail; 
+            });
+            lucide.createIcons(); 
+        }
+
+        // Initialize theme and icons when the content is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme(); 
+            lucide.createIcons();
         });
-        
     </script>
 </body>
 </html>
-
-
