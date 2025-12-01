@@ -1,883 +1,1154 @@
+<!-- 
+  This is the T2 OS Cancellations & Returns Checklist application. 
+  It uses Firebase Email/Password authentication and Firestore for:
+  1. Storing master checklists (public/data/checklists).
+  2. Storing user-specific checklist progress (users/{userId}/checklists).
+  3. Storing submitted tickets and suggestions.
+  4. Role-based visibility for Admin controls (add/delete tasks, edit tasks).
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ef6d4f">
-    <meta name="description" content="SOS Daily Practice Platform">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://play-lh.googleusercontent.com/ZvXwylZYLMWrhTbpMKpehJWBhg9VcHoiovOHh4oRA3dU_e9tQp0gYRzkRp29QkAxhI4=w240-h480-rw">
-    
-    <title>SOS Daily Practice</title>
-
-    <!-- 1. Fonts: Montserrat -->
+    <title>T2 OS Cancellations & Returns Checklist</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- 2. Tailwind CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Montserrat', 'sans-serif'],
-                    },
-                    colors: {
-                        tempo: {
-                            red: '#f46d6d',
-                            blue: '#88a2b2',
-                            yellow: '#ffeda0',
-                            purple: '#485484',
-                            orange: '#ef6d4f',
-                            gold: '#c6a777',
-                            dark: '#1a1a1a',
-                            light: '#f8f9fa',
-                            darkbg: '#09090b', 
-                            darkcard: '#18181b',
-                            darkinput: '#27272a',
-                        }
-                    },
-                    animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                        'float-delayed': 'float 6s ease-in-out 3s infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- 3. React & ReactDOM & Babel -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- 4. Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- 5. Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
     <style>
-        /* Base styles with dark mode support */
-        body { @apply bg-zinc-50 text-zinc-900 dark:bg-tempo-darkbg dark:text-white transition-colors duration-300; overflow-x: hidden; }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .star-filled { fill: currentColor; }
-        #app-error { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #18181b; color: #f46d6d; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #212121;
+            color: #E0E0E0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.light-mode {
+            background-color: #f5f5f5;
+            color: #000000;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: #3e2723;
+            transition: background-color 0.3s;
+        }
+        body.light-mode .container {
+            background-color: #ffffff;
+        }
+        body.light-mode h1, body.light-mode h2 {
+            color: #000000;
+        }
+        body.light-mode input,
+        body.light-mode textarea,
+        body.light-mode select {
+            color: #000000;
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        .task-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .task-list-container::-webkit-scrollbar-track {
+            background: #424242;
+            border-radius: 10px;
+        }
+        body.light-mode .task-list-container::-webkit-scrollbar-track {
+            background: #e0e0e0;
+        }
+        .task-list-container::-webkit-scrollbar-thumb {
+            background: #757575;
+            border-radius: 10px;
+        }
+        body.light-mode .task-list-container::-webkit-scrollbar-thumb {
+            background: #9e9e9e;
+        }
+        .task-list-container::-webkit-scrollbar-thumb:hover {
+            background: #9e9e9e;
+        }
+        body.light-mode .task-list-container::-webkit-scrollbar-thumb:hover {
+            background: #757575;
+        }
+        input[type="checkbox"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #757575;
+            border-radius: 4px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease-in-out;
+        }
+        body.light-mode input[type="checkbox"] {
+            border-color: #9e9e9e;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #4caf50;
+            border-color: #4caf50;
+        }
+        input[type="checkbox"]:checked::before {
+            content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M9.707 14.293L19.414 4.586A2 2 0 0122 6V20a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h12.414l-9.707 9.707a2 2 0 010 2.828l2.586 2.586a2 2 0 012.828 0z" /></svg>');
+            display: block;
+            position: relative;
+            left: 2px;
+            top: 2px;
+        }
+        .task-item {
+            background-color: #3e2723;
+            transition: background-color 0.2s ease-in-out;
+            cursor: pointer; /* General cursor for interaction */
+        }
+        body.light-mode .task-item {
+            background-color: #eeeeee;
+            border: 1px solid #e0e0e0;
+        }
+        body.light-mode .task-item:hover {
+            background-color: #e0e0e0;
+        }
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #d4c2a5;
+        }
+        body.light-mode .task-item.completed .task-text {
+            color: #757575;
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-box.show {
+            opacity: 1;
+        }
+        .delete-btn {
+            background-color: #ef4444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .delete-btn:hover {
+            background-color: #dc2626;
+        }
+        .theme-toggle-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem;
+            border-radius: 9999px;
+            background-color: #5d4037;
+            color: #f5f5dc;
+            transition: background-color 0.3s, color 0.3s;
+            cursor: pointer;
+        }
+        body.light-mode .theme-toggle-button {
+            background-color: #d1d5db;
+            color: #212121;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #3e2723;
+            margin: 15% auto;
+            padding: 2rem;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        body.light-mode .modal-content {
+            background-color: #f9fafb;
+            border: 1px solid #e0e0e0;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        body.light-mode .close-button:hover,
+        body.light-mode .close-button:focus {
+            color: #212121;
+        }
+        #suggestion-text, #suggestion-process, #password-reset-email {
+            color: #f5f5dc;
+            background-color: #424242;
+        }
+        body.light-mode #suggestion-text, body.light-mode #suggestion-process, body.light-mode #password-reset-email {
+            color: #000000;
+            background-color: #ffffff;
+        }
+        body.light-mode #login-form-container input {
+            background-color: #f5f5f5;
+        }
+        #login-form-container input {
+            background-color: #362f2f;
+        }
+        body.light-mode .text-gray-400 {
+            color: #333333;
+        }
+        .task-text {
+            color: #f5f5dc;
+        }
+        body.light-mode .task-text {
+            color: #000000;
+        }
+        #current-checklist-title {
+            color: #f5f5dc;
+        }
+        body.light-mode #current-checklist-title {
+            color: #000000;
+        }
+        .text-gray-200 {
+            color: #f5f5dc;
+        }
+        body.light-mode .text-gray-200 {
+            color: #000000;
+        }
+        
+        /* Drag and Drop styles */
+        .task-item.draggable {
+            cursor: grab;
+        }
+        .task-item.dragging {
+            opacity: 0.5;
+            border: 2px dashed #9e9e9e;
+        }
     </style>
 </head>
-<body>
-    <div id="app-error">
-        <h2 class="text-2xl font-bold mb-2">Application Error</h2>
-        <p id="error-message" class="mb-4 font-mono text-sm opacity-80"></p>
-        <button onclick="window.location.reload()" class="px-4 py-2 bg-white text-black rounded font-bold">Reload</button>
-    </div>
-    <div id="root"></div>
+<body class="bg-gray-900 text-gray-100">
 
-    <script>
-        window.onerror = function(message, source, lineno, colno, error) {
-            document.getElementById('app-error').style.display = 'flex';
-            document.getElementById('error-message').innerText = message + " (Line " + lineno + ")";
-        };
-    </script>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
-
-        // --- FIREBASE CONFIG ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDkXOuZGZ_vMQJPAIFe3ujRAoiN3BLFhoQ",
-            authDomain: "os-daily-practice-data.firebaseapp.com",
-            projectId: "os-daily-practice-data",
-            storageBucket: "os-daily-practice-data.firebasestorage.app",
-            messagingSenderId: "854911444720",
-            appId: "1:854911444720:web:1406bd3843a3082a3fc435",
-            measurementId: "G-47TJTYBX20"
-        };
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        const ADMIN_EMAILS = [
-            'ahmed.hamed@tempo.fit',
-            'fatma.mohammad@tempo.fit',
-            'hebasobky@tempo.fit',
-            'khaledsabban@tempo.fit'
-        ];
-
-        const EMOJIS = ["👍","👎","❤️","🔥","✅","❌","🎉","🤔","👀","💪","👋","🙌","👏","🤝","🚀","💡","⭐","🏆","💯","✨","😊","😂","😎","😢","😡","🤯","😱","🤗","🤫","🫡","🏋️","🧘","🚴","🤸","🏃","📞","💻","📱","📧","💬"];
-
-        const MODES = {
-            SMS: { id: 'sms', label: 'Daily SMS', iconName: 'message-square', color: 'text-tempo-orange', bg: 'bg-tempo-orange', border: 'border-tempo-orange', lightBg: 'bg-orange-50 dark:bg-orange-900/10', persona: 'Coach Melissa' },
-            QUIZ: { id: 'quiz', label: 'Weekly Quiz', iconName: 'trophy', color: 'text-tempo-purple', bg: 'bg-tempo-purple', border: 'border-tempo-purple', lightBg: 'bg-indigo-50 dark:bg-indigo-900/20', persona: 'Sales Expert' }
-        };
-
-        // --- UTILS ---
-        const formatDate = (ts) => {
-            if (!ts || !ts.seconds) return 'Just now';
-            return new Date(ts.seconds * 1000).toLocaleDateString() + ' ' + new Date(ts.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        };
-
-        const getManagerName = (email) => {
-            if (!email) return 'Manager';
-            const lower = email.toLowerCase();
-            if (lower.includes('ahmed.hamed')) return 'Hamad';
-            if (lower.includes('fatma')) return 'Fatma';
-            if (lower.includes('heba')) return 'Heba';
-            if (lower.includes('khaled')) return 'Khaled';
-            return email.split('@')[0]; 
-        };
-
-        const getRatingLabel = (score) => {
-            if (score === 5) return "Perfect Response!";
-            if (score >= 3) return "Good Response!";
-            if (score >= 1) return "You Can Do Better!";
-            return "";
-        };
-        
-        const getRatingColorClass = (score) => {
-            if (score === 5) return "text-green-600 dark:text-green-400";
-            if (score >= 3) return "text-tempo-blue dark:text-blue-300";
-            return "text-tempo-red dark:text-red-400";
-        }
-
-        // --- BASE COMPONENTS ---
-        
-        const Icon = ({ name, className, filled }) => {
-            const iconRef = useRef(null);
-            useEffect(() => {
-               if(iconRef.current && window.lucide) {
-                   iconRef.current.innerHTML = '';
-                   const i = document.createElement('i');
-                   i.setAttribute('data-lucide', name);
-                   if(className) i.className = className;
-                   if(filled) i.setAttribute('fill', 'currentColor');
-                   iconRef.current.appendChild(i);
-                   window.lucide.createIcons({ root: iconRef.current, nameAttr: 'data-lucide', attrs: { class: className, fill: filled ? 'currentColor' : 'none' } });
-               }
-            }, [name, className, filled]);
-            return <span ref={iconRef} className="inline-flex items-center justify-center" style={{lineHeight: 0}} />;
-        };
-
-        const NotificationBadge = ({ count, modeBgClass }) => {
-            if (!count) return null;
-            return <span className={`absolute -top-1 -right-2 ${modeBgClass} text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm border border-white dark:border-zinc-800`}>{count}</span>;
-        };
-
-        const StarRating = ({ rating, onRate, readonly = false }) => {
-            return (
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <button key={star} type="button" disabled={readonly} onClick={() => !readonly && onRate(star)}
-                                className={`focus:outline-none transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-125'}`}
-                                title={readonly ? `Score: ${rating}/5` : `Rate ${star} Stars`}>
-                                <Icon name="star" className={`w-5 h-5 ${star <= rating ? 'text-tempo-yellow' : 'text-zinc-300 dark:text-zinc-600'}`} filled={star <= rating} />
-                            </button>
-                        ))}
-                    </div>
-                    {rating > 0 && <span className={`text-[10px] font-bold uppercase tracking-wider ${getRatingColorClass(rating)}`}>{getRatingLabel(rating)}</span>}
-                </div>
-            );
-        };
-
-        const MarkdownText = ({ text }) => {
-            if (!text) return null;
-            const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|\[.*?\]\(.*?\))/g);
-            return (
-                <span>
-                    {parts.map((part, i) => {
-                        if (part.startsWith('**') && part.endsWith('**')) return <strong key={i} className="font-extrabold text-tempo-purple dark:text-tempo-yellow">{part.slice(2, -2)}</strong>;
-                        if (part.startsWith('*') && part.endsWith('*')) return <em key={i} className="italic text-tempo-purple dark:text-tempo-yellow">{part.slice(1, -1)}</em>;
-                        if (part.startsWith('[') && part.includes('](') && part.endsWith(')')) {
-                            const match = part.match(/\[(.*?)\]\((.*?)\)/);
-                            if (match) return <a key={i} href={match[2]} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 underline decoration-dotted underline-offset-4">{match[1]}</a>;
-                        }
-                        return part;
-                    })}
-                </span>
-            );
-        };
-
-        const FitnessBackground = () => (
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 opacity-[0.03] dark:opacity-[0.05]">
-                <div className="absolute top-20 left-[10%] animate-float"><Icon name="dumbbell" className="w-24 h-24 text-zinc-900 dark:text-white" /></div>
-                <div className="absolute bottom-32 right-[10%] animate-float-delayed"><Icon name="activity" className="w-32 h-32 text-tempo-orange" /></div>
-                <div className="absolute top-1/3 right-[20%] animate-float"><Icon name="zap" className="w-16 h-16 text-tempo-yellow" /></div>
-                <div className="absolute bottom-10 left-[20%] animate-float-delayed"><Icon name="heart" className="w-20 h-20 text-tempo-red" /></div>
+    <div class="container rounded-lg shadow-xl p-8 relative">
+        <button id="theme-toggle" class="theme-toggle-button">
+            <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.293 17.293a1 1 0 01-1.414-1.414l2-2a1 1 0 011.414 1.414l-2 2zM3 10a7 7 0 1114 0A7 7 0 013 10z" clip-rule="evenodd" fill-rule="evenodd" />
+            </svg>
+            <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zM14.586 4.586a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM14.586 15.414a1 1 0 01-1.414 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.414zM10 17a1 1 0 01-1 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.414 15.414a1 1 0 010-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM3 10a1 1 0 011 1h1a1 1 0 110-2H4a1 1 0 01-1 1zM5.414 4.586a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414z" clip-rule="evenodd" fill-rule="evenodd" />
+            </svg>
+        </button>
+        <div class="flex flex-col items-center justify-center mb-8">
+            <div class="flex items-center space-x-4 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H10z" clip-rule="evenodd" />
+                </svg>
+                <h1 class="text-3xl font-bold text-white">T2 OS Cancellations & Returns Checklist</h1>
             </div>
-        );
+            <p class="text-gray-400 text-center">Your personalized dashboard to create and manage checklists for your team's daily tasks.</p>
+        </div>
 
-        const RichTextEditor = ({ value, onChange, placeholder }) => {
-            const textareaRef = useRef(null);
-            const [showEmoji, setShowEmoji] = useState(false);
+        <!-- Login Form -->
+        <div id="login-form-container" class="mb-6">
+            <h2 class="text-2xl font-semibold text-gray-200 mb-4">Admin Login</h2>
+            <form id="login-form" class="flex flex-col space-y-4">
+                <input type="email" id="email-input" placeholder="Email" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="password" id="password-input" placeholder="Password" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Log In</button>
+                <a href="#" id="forgot-password-link" class="text-center text-sm text-blue-400 hover:text-blue-300">Forgot Password?</a>
+            </form>
+        </div>
 
-            const insertFormat = (tag) => {
-                const textarea = textareaRef.current;
-                const start = textarea.selectionStart; const end = textarea.selectionEnd; const text = textarea.value;
-                let newText, newCursorPos;
-
-                if (tag === 'link') {
-                    const url = prompt("Enter URL:");
-                    if (!url) return;
-                    const selected = text.slice(start, end) || "link";
-                    const insert = `[${selected}](${url})`;
-                    newText = text.slice(0, start) + insert + text.slice(end);
-                    newCursorPos = start + insert.length;
-                } else if (tag.length <= 2) { 
-                     newText = text.slice(0, start) + tag + text.slice(end);
-                     newCursorPos = start + tag.length;
-                } else {
-                    const wrapper = tag === 'bold' ? '**' : '*';
-                    newText = text.slice(0, start) + wrapper + text.slice(start, end) + wrapper + text.slice(end);
-                    newCursorPos = end + (wrapper.length * 2);
-                }
-                onChange(newText);
-                setTimeout(() => { textarea.focus(); textarea.setSelectionRange(newCursorPos, newCursorPos); }, 0);
-            };
-
-            return (
-                <div className="border border-zinc-300 dark:border-zinc-700 rounded-xl overflow-hidden bg-white dark:bg-tempo-darkinput focus-within:ring-2 focus-within:ring-tempo-blue transition-shadow relative">
-                    <div className="flex items-center gap-1 bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700 px-2 py-1.5">
-                        <button type="button" onClick={() => insertFormat('bold')} className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-zinc-700 dark:text-zinc-300 font-bold" title="Bold"><span className="font-serif">B</span></button>
-                        <button type="button" onClick={() => insertFormat('italic')} className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-zinc-700 dark:text-zinc-300 italic" title="Italic"><span className="font-serif">I</span></button>
-                        <button type="button" onClick={() => insertFormat('link')} className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-zinc-700 dark:text-zinc-300" title="Link"><Icon name="link" className="w-4 h-4" /></button>
-                        <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
-                        <div className="relative">
-                            <button type="button" onClick={() => setShowEmoji(!showEmoji)} className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-zinc-700 dark:text-zinc-300" title="Insert Emoji"><Icon name="smile" className="w-4 h-4" /></button>
-                            {showEmoji && (
-                                <>
-                                    <div className="fixed inset-0 z-10" onClick={() => setShowEmoji(false)}></div>
-                                    <div className="absolute top-8 left-0 z-20 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl p-2 w-64 grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
-                                        {EMOJIS.map(e => <button key={e} type="button" onClick={() => { insertFormat(e); setShowEmoji(false); }} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded text-lg flex items-center justify-center">{e}</button>)}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                    <textarea ref={textareaRef} className="w-full p-4 outline-none text-sm min-h-[120px] bg-transparent text-zinc-950 dark:text-zinc-100 resize-y font-sans placeholder-zinc-500 dark:placeholder-zinc-500" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
-                </div>
-            );
-        };
-
-        const Header = ({ theme, toggleTheme, userRole, currentUser, onSignOut }) => {
-            return (
-                <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-tempo-darkcard/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm transition-colors duration-300">
-                    <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between relative z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-tempo-orange p-1.5 rounded-lg shadow-sm"><Icon name="shield" className="text-white w-6 h-6" /></div>
-                            <span className="font-bold text-xl tracking-tight text-tempo-purple dark:text-white">SOS <span className="text-tempo-orange">DAILY PRACTICE</span></span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                             <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-400 transition-colors" title="Toggle Dark Mode">
-                                {theme === 'dark' ? <Icon name="sun" className="w-5 h-5" /> : <Icon name="moon" className="w-5 h-5" />}
-                            </button>
-                            {currentUser && (
-                                <div className="flex items-center gap-3 pl-4 border-l border-zinc-200 dark:border-zinc-700">
-                                    <div className="flex flex-col items-end mr-1 hidden sm:flex">
-                                        <span className="text-xs font-bold text-tempo-purple dark:text-zinc-300">{currentUser.displayName || 'Agent'}</span>
-                                    </div>
-                                    <div className="w-9 h-9 rounded-full bg-tempo-purple text-tempo-yellow flex items-center justify-center text-sm font-bold shadow-sm border-2 border-white dark:border-zinc-800" title={currentUser.email}>
-                                        {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'A'}
-                                    </div>
-                                    <button onClick={onSignOut} className="text-zinc-400 hover:text-tempo-red transition-colors" title="Sign Out"><Icon name="log-out" className="w-5 h-5" /></button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </header>
-            );
-        };
-
-        const LoginScreen = ({ onSignIn, onSignUp, theme, toggleTheme }) => {
-            const [isSignUp, setIsSignUp] = useState(false);
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [name, setName] = useState('');
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState(null);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setError(null);
-                setLoading(true);
-                try {
-                    if (isSignUp) { await onSignUp(email, password, name); } 
-                    else { await onSignIn(email, password); }
-                } catch (err) {
-                    console.error(err);
-                    let msg = err.message;
-                    if (err.code === 'auth/configuration-not-found') msg = "Setup Error: Please enable 'Email/Password' in Firebase Console.";
-                    else if (err.code === 'auth/email-already-in-use') msg = "Email already registered.";
-                    else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') msg = "Invalid email or password.";
-                    else if (err.code === 'auth/weak-password') msg = "Password too short (min 6 chars).";
-                    setError(msg);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-black p-4 font-sans transition-colors duration-300 relative">
-                    <div className="absolute top-4 right-4 z-20">
-                         <button onClick={toggleTheme} className="p-3 rounded-full bg-white dark:bg-zinc-800 shadow-md hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-400 transition-colors">
-                            {theme === 'dark' ? <Icon name="sun" className="w-5 h-5" /> : <Icon name="moon" className="w-5 h-5" />}
-                        </button>
-                    </div>
-                    <div className="w-full max-w-md bg-white dark:bg-tempo-darkcard rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800 p-10 fade-in z-10 relative">
-                        <div className="flex justify-center mb-8">
-                            <div className="w-20 h-20 bg-tempo-orange rounded-3xl flex items-center justify-center shadow-xl shadow-orange-200 dark:shadow-none transform -rotate-3"><Icon name="shield" className="text-white w-10 h-10" /></div>
-                        </div>
-                        <h2 className="text-3xl font-extrabold text-center mb-2 text-tempo-purple dark:text-white">{isSignUp ? 'Join the Team' : 'Welcome Back'}</h2>
-                        <p className="text-center text-zinc-700 dark:text-zinc-400 mb-8 font-medium">{isSignUp ? 'Create your agent profile.' : 'Sign in to access daily challenges.'}</p>
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            {isSignUp && (
-                                <div className="relative group">
-                                    <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="user" className="w-5 h-5" /></div>
-                                    <input type="text" placeholder="Agent Name (e.g. AG101)" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={name} onChange={e => setName(e.target.value)} required />
-                                </div>
-                            )}
-                            <div className="relative group">
-                                <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="mail" className="w-5 h-5" /></div>
-                                <input type="email" placeholder="Email Address" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={email} onChange={e => setEmail(e.target.value)} required />
-                            </div>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="lock" className="w-5 h-5" /></div>
-                                <input type="password" placeholder="Password" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={password} onChange={e => setPassword(e.target.value)} required />
-                            </div>
-                            {error && <div className="p-4 text-sm bg-red-50 dark:bg-red-900/20 text-tempo-red dark:text-red-400 rounded-xl border-l-4 border-tempo-red flex items-start gap-3"><Icon name="alert-circle" className="w-5 h-5 min-w-[20px]" /><span className="font-medium">{error}</span></div>}
-                            <button type="submit" disabled={loading} className="w-full bg-tempo-purple text-white font-bold py-4 rounded-xl hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5 transition-all active:bg-green-600 disabled:opacity-70 disabled:transform-none flex items-center justify-center gap-2 mt-4">{loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')} {!loading && <Icon name="arrow-right" className="w-5 h-5" />}</button>
-                        </form>
-                        <div className="mt-8 text-center">
-                            <button onClick={() => { setIsSignUp(!isSignUp); setError(null); }} className="text-sm text-zinc-700 dark:text-zinc-400 hover:text-tempo-orange font-semibold transition-colors">{isSignUp ? 'Already have an account? Sign In' : 'New agent? Create an account'}</button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- COMPLEX COMPONENTS (Properly Ordered) ---
+        <div id="user-info" class="text-sm text-gray-400 mb-4 rounded-md p-2 bg-gray-800 hidden flex items-center justify-between">
+            <p>Logged in as: <span id="user-email" class="font-medium text-gray-200"></span></p>
+            <button id="logout-btn" class="text-xs text-red-400 hover:text-red-300 font-semibold transition-colors">Log Out</button>
+        </div>
         
-        const CommentsSection = ({ responseId, comments, onAddComment, onEditComment, onDeleteComment, currentUser }) => {
-            const [newComment, setNewComment] = useState('');
-            const [editingIndex, setEditingIndex] = useState(null);
-            const [editText, setEditText] = useState('');
-            const [isSubmitting, setIsSubmitting] = useState(false);
+        <div id="loading" class="text-center p-8 text-gray-500 font-medium">
+            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-2">Connecting to the dashboard...</p>
+        </div>
 
-            const handleSend = async (e) => {
-                e.preventDefault();
-                if(!newComment.trim()) return;
-                setIsSubmitting(true);
-                await onAddComment(responseId, newComment);
-                setNewComment('');
-                setIsSubmitting(false);
-            };
-            const startEdit = (index, text) => { setEditingIndex(index); setEditText(text); };
-            const saveEdit = async (index) => {
-                if (!editText.trim()) return;
-                await onEditComment(responseId, index, editText);
-                setEditingIndex(null); setEditText('');
-            };
+        <!-- Checklists Section -->
+        <div id="checklist-section" class="hidden">
+            <div class="mb-6">
+                <label for="checklist-selector" class="block text-sm font-medium text-gray-300 mb-2">Select a Process Checklist:</label>
+                <select id="checklist-selector" class="block w-full rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                    <option value="subscription-cancellation">Subscription Cancellation</option>
+                     <option value="membership-pause">Membership Pause</option>
+                    <option value="returns">Returns</option>
+                    <option value="order-cancellations">Order Cancellations</option>
+                    <option value="downgrades">Downgrades</option>
+                    <option value="sales">Sales</option>
+                    <option value="winback-outreach">Winback Outreach</option>
+                </select>
+            </div>
 
-            return (
-                <div className="mt-4 border-t border-zinc-200 dark:border-zinc-700 pt-4">
-                    <h4 className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-3 flex items-center gap-2"><Icon name="message-circle" className="w-3 h-3" /> Discussion</h4>
-                    <div className="space-y-3 mb-4">
-                        {(!comments || comments.length === 0) && <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">No questions or comments yet.</p>}
-                        {comments && comments.map((c, i) => (
-                            <div key={i} className={`flex flex-col ${c.email === currentUser.email ? 'items-end' : 'items-start'}`}>
-                                {editingIndex === i ? (
-                                    <div className="w-full max-w-[85%]">
-                                        <RichTextEditor value={editText} onChange={setEditText} />
-                                        <div className="flex justify-end gap-2 mt-2">
-                                            <button onClick={() => setEditingIndex(null)} className="text-xs text-zinc-500 hover:text-zinc-700">Cancel</button>
-                                            <button onClick={() => saveEdit(i)} className="text-xs bg-tempo-purple text-white px-3 py-1 rounded-md">Save</button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm relative group ${c.email === currentUser.email ? 'bg-tempo-blue/20 text-tempo-purple dark:text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-300'}`}>
-                                        <div className="text-[10px] font-bold opacity-75 mb-0.5 flex justify-between items-center">
-                                            <span>{c.author}</span>
-                                            {c.email === currentUser.email && (
-                                                <div className="flex gap-2 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => startEdit(i, c.text)} title="Edit" className="hover:text-tempo-orange"><Icon name="pencil" className="w-3 h-3" /></button>
-                                                    <button onClick={() => onDeleteComment(responseId, i)} title="Delete" className="hover:text-tempo-red"><Icon name="trash-2" className="w-3 h-3" /></button>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <MarkdownText text={c.text} />
-                                    </div>
-                                )}
-                                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 px-1">{formatDate(c.timestamp)}</span>
-                            </div>
-                        ))}
-                    </div>
-                    <form onSubmit={handleSend} className="flex gap-2 items-end">
-                        <div className="flex-1"><RichTextEditor value={newComment} onChange={setNewComment} placeholder="Reply..." /></div>
-                        <button type="submit" disabled={!newComment.trim() || isSubmitting} className="bg-tempo-purple text-white p-3 rounded-xl hover:opacity-90 disabled:opacity-50 transition-all h-[48px] flex items-center justify-center"><Icon name="send" className="w-4 h-4" /></button>
-                    </form>
-                </div>
-            );
-        };
-
-        const FeedbackInput = ({ response, onPostFeedback, onDeleteFeedback }) => {
-            const [feedback, setFeedback] = useState(response.adminFeedback || '');
-            const [score, setScore] = useState(response.score || 0);
-            const [status, setStatus] = useState('idle');
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if(!feedback.trim()) return;
-                setStatus('saving');
-                await onPostFeedback(response.id, feedback, score);
-                setStatus('success');
-                setTimeout(() => setStatus('idle'), 2000);
-            }
-
-            const handleDelete = async () => {
-                if(confirm("Delete this feedback?")) {
-                    await onDeleteFeedback(response.id);
-                    setFeedback(''); setScore(0);
-                }
-            }
-
-            return (
-                <form onSubmit={handleSubmit} className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-700">
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="block text-xs font-bold uppercase text-tempo-blue flex items-center gap-2"><Icon name="pen-tool" className="w-3 h-3" /> Provide Coaching</label>
-                        <StarRating rating={score} onRate={setScore} />
-                    </div>
-                    <RichTextEditor value={feedback} onChange={setFeedback} placeholder="Write feedback..." />
-                    <div className="flex justify-end mt-3 gap-2">
-                         {response.adminFeedback && <button type="button" onClick={handleDelete} className="px-3 py-2 rounded-lg text-xs font-bold text-tempo-red hover:bg-red-50 dark:hover:bg-red-900/20 border border-transparent hover:border-tempo-red transition-all"><Icon name="trash-2" className="w-4 h-4" /></button>}
-                        <button type="submit" disabled={!feedback.trim() || status === 'saving'} className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${status === 'success' ? 'bg-green-500 text-white' : 'bg-tempo-purple text-white hover:bg-opacity-90'} disabled:opacity-50`}>
-                            {status === 'saving' && 'Saving...'}
-                            {status === 'success' && <><Icon name="check" className="w-3 h-3" /> Saved!</>}
-                            {status === 'idle' && 'Submit Feedback'}
-                        </button>
-                    </div>
+            <!-- Admin Options (Conditional Visibility) -->
+            <div id="admin-options" class="hidden">
+                <form id="add-task-form" class="mb-4 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <input type="text" id="new-task-input" placeholder="Add a new task..." class="flex-1 rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Add Task</button>
                 </form>
-            )
-        }
+            </div>
 
-        const ResponseCard = ({ prompt, mode, onSubmit }) => {
-            const [text, setText] = useState('');
-            const [submitting, setSubmitting] = useState(false);
-
-            const handleSubmit = async () => {
-                if(text.trim()) {
-                    setSubmitting(true);
-                    await onSubmit(prompt.id, text);
-                    setSubmitting(false);
-                    setText('');
-                }
-            }
+            <!-- Ticket Link Input -->
+            <div class="mb-6">
+                <label for="ticket-link-input" class="block text-sm font-medium text-gray-300 mb-2">Ticket Link:</label>
+                <input type="url" id="ticket-link-input" placeholder="Paste ticket link here..." class="block w-full rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required>
+            </div>
             
-            const renderAttachment = () => {
-                if(!prompt.attachmentUrl) return null;
-                const isAudio = prompt.attachmentUrl.match(/\.(mp3|wav|m4a)$/i);
-                return (
-                    <div className="mt-4 mb-4 p-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl">
-                        <p className="text-xs font-bold uppercase text-zinc-400 mb-2 flex items-center gap-1"><Icon name="paperclip" className="w-3 h-3" /> Attachment</p>
-                        <a href={prompt.attachmentUrl} target="_blank" rel="noopener" className="text-sm text-tempo-blue hover:underline flex items-center gap-2"><Icon name="download" className="w-4 h-4" /> Download / View File</a>
-                    </div>
-                );
-            };
-
-            return (
-                <div className={`bg-white dark:bg-tempo-darkcard p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all fade-in border-l-4 ${mode.border}`}>
-                    <div className="flex justify-between items-start mb-4">
-                        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2 shadow-sm ${mode.bg}`}><Icon name={mode.iconName} className="w-3 h-3" /> {mode.label}</span>
-                        <span className="text-xs text-zinc-600 dark:text-zinc-400 flex items-center gap-1 font-medium"><Icon name="clock" className="w-3 h-3" /> {formatDate(prompt.createdAt)}</span>
-                    </div>
-                    <div className="text-sm text-zinc-800 dark:text-zinc-200 mb-4 leading-relaxed font-medium"><MarkdownText text={prompt.content} /></div>
-                    {renderAttachment()}
-                    <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400"><Icon name="user" className="w-3 h-3" /> Respond as: <span className={mode.color}>{mode.persona}</span></div>
-                    <div className="space-y-4">
-                        <RichTextEditor value={text} onChange={setText} placeholder="Type your response here..." />
-                        <div className="flex justify-end">
-                            <button onClick={handleSubmit} disabled={!text.trim() || submitting} className={`px-6 py-2.5 ${mode.bg} text-white rounded-xl font-bold text-sm hover:brightness-110 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:transform-none flex items-center gap-2 shadow-md`}>{submitting ? 'Sending...' : <>Submit Response <Icon name="send" className="w-4 h-4" /></>}</button>
-                        </div>
-                    </div>
+            <div id="task-list-wrapper" class="bg-gray-800 rounded-lg p-6 max-h-[400px] overflow-y-auto task-list-container">
+                <h2 class="text-xl font-semibold text-gray-200 mb-4" id="current-checklist-title">Current Checklist Items</h2>
+                <div id="task-list" class="space-y-4">
+                    <!-- Checklist items will be dynamically added here -->
                 </div>
-            );
+                <div id="empty-state" class="text-center text-gray-500 p-8 hidden">
+                    <p>No checklist items found. Add a new task to get started!</p>
+                </div>
+            </div>
+            
+            <!-- Agent Options (Conditional Visibility) -->
+            <div id="agent-options" class="flex justify-center mt-6 hidden">
+                <button id="suggest-task-btn" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Suggest a Task</button>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-center mt-6">
+                <button id="submit-ticket-btn" class="bg-green-600 text-white font-semibold rounded-lg p-3 hover:bg-green-500 transition-colors">Submit Ticket</button>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="suggestion-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('suggestion-modal')">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Suggest a Task</h2>
+            <form id="suggestion-form" class="flex flex-col space-y-4">
+                <select id="suggestion-process" class="block w-full rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                    <option value="subscription-cancellation">Subscription Cancellation</option>
+                    <option value="membership-pause">Membership Pause</option>
+                    <option value="returns">Returns</option>
+                    <option value="order-cancellations">Order Cancellations</option>
+                    <option value="downgrades">Downgrades</option>
+                    <option value="sales">Sales</option>
+                    <option value="winback-outreach">Winback Outreach</option>
+                </select>
+                <textarea id="suggestion-text" rows="4" placeholder="Enter your suggestion here..." class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" required></textarea>
+                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Submit Suggestion</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div id="password-reset-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('password-reset-modal')">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Reset Password</h2>
+            <form id="password-reset-form" class="flex flex-col space-y-4">
+                <input type="email" id="password-reset-email" placeholder="Enter your email" class="rounded-lg border-2 border-gray-600 bg-gray-800 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <button type="submit" class="bg-blue-600 text-white font-semibold rounded-lg p-3 hover:bg-blue-500 transition-colors">Send Reset Link</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="message-box" class="message-box text-white"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, updateDoc, doc, setDoc, getDoc, runTransaction, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        
+        let db, auth, appId;
+        let unsubscribe = null;
+        let masterChecklists = {};
+        let userChecklists = {};
+        let userRole = 'guest';
+        let draggedElement = null; // For drag and drop
+
+        // Default tasks (restored based on common use case)
+        const DEFAULT_MASTER_TASKS = {
+            'subscription-cancellation': [
+                { name: "Verify customer identity (3 points of data)", completed: false },
+                { name: "Confirm cancellation effective date", completed: false },
+                { name: "Process pro-rata refund if applicable", completed: false },
+                { name: "Send cancellation confirmation email/SMS", completed: false },
+                { name: "Update CRM ticket with cancellation reason", completed: false }
+            ],
+            'membership-pause': [
+                { name: "Confirm customer's desired pause duration", completed: false },
+                { name: "Verify billing cycle to set pause start date", completed: false },
+                { name: "Apply 'Pause' tag in internal system", completed: false },
+                { name: "Inform customer of reactivation process", completed: false }
+            ],
+            'returns': [
+                { name: "Verify return eligibility and policy compliance", completed: false },
+                { name: "Issue RMA/Shipping label to customer", completed: false },
+                { name: "Log expected return in inventory system", completed: false },
+                { name: "Set up refund trigger upon return scan", completed: false }
+            ],
+             'order-cancellations': [
+                { name: "Check order status (pre-fulfillment)", completed: false },
+                { name: "Cancel order in e-commerce platform", completed: false },
+                { name: "Refund full amount to customer", completed: false },
+                { name: "Send order cancellation confirmation", completed: false }
+            ]
+            // Other checklists remain empty until defined
         };
 
-        const HistoryCard = ({ response, allPrompts, currentUser, onAddComment, onEditComment, onDeleteComment }) => {
-            const [open, setOpen] = useState(false);
-            const prompt = allPrompts.find(p => p.id === response.promptId);
-            if(!prompt) return null;
-            const mode = prompt.type === 'sms' ? MODES.SMS : MODES.QUIZ;
-            const hasFeedback = !!response.adminFeedback;
 
-            return (
-                <div className="bg-white dark:bg-tempo-darkcard border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-center cursor-pointer" onClick={() => setOpen(!open)}>
-                        <div className="flex items-center gap-4">
-                            <div className={`w-3 h-3 rounded-full ${mode.bg}`}></div>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-0.5">Submitted {formatDate(response.timestamp)}</span>
-                                <div className="text-sm font-medium text-tempo-purple dark:text-white line-clamp-1 max-w-[200px] sm:max-w-md"><MarkdownText text={response.responseContent} /></div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                             {hasFeedback ? <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase flex items-center gap-1.5 border border-green-200 dark:border-green-800"><Icon name="check-circle" className="w-3 h-3" /> Reviewed</span> : <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border border-zinc-200 dark:border-zinc-700">Pending</span>}
-                             <div className={`bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-full transition-transform duration-300 ${open ? 'rotate-180' : ''}`}><Icon name="chevron-down" className="w-4 h-4 text-zinc-600 dark:text-zinc-400" /></div>
-                        </div>
-                    </div>
-                    {open && (
-                        <div className="mt-5 pt-5 border-t border-zinc-100 dark:border-zinc-800 space-y-5 fade-in">
-                             <div className={`${mode.lightBg} p-4 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50`}>
-                                <span className={`text-[10px] font-bold uppercase ${mode.color} block mb-2 flex items-center gap-1`}><Icon name="help-circle" className="w-3 h-3" /> Inquiry</span>
-                                <div className="text-sm text-zinc-950 dark:text-zinc-200 font-medium"><MarkdownText text={prompt.content} /></div>
-                                {prompt.attachmentUrl && (
-                                    <div className="mt-2 text-xs">
-                                        <a href={prompt.attachmentUrl} target="_blank" className="text-tempo-blue hover:underline flex items-center gap-1"><Icon name="download" className="w-3 h-3" /> View Attachment</a>
-                                    </div>
-                                )}
-                             </div>
-                             <div className="pl-2 border-l-2 border-zinc-200 dark:border-zinc-700">
-                                <span className="text-[10px] font-bold uppercase text-zinc-600 dark:text-zinc-400 block mb-2 ml-2">Your Answer</span>
-                                <div className="text-sm text-zinc-900 dark:text-zinc-300 whitespace-pre-wrap ml-2 leading-relaxed"><MarkdownText text={response.responseContent} /></div>
-                             </div>
-                             {hasFeedback ? (
-                                <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border-l-4 border-green-500 shadow-sm">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-[10px] font-bold uppercase text-green-600 block flex items-center gap-1.5"><Icon name="shield" className="w-3 h-3" /> {getManagerName(response.feedbackAuthor)} Feedback</span>
-                                        <StarRating rating={response.score || 0} readonly />
-                                    </div>
-                                    <div className="text-sm text-zinc-950 dark:text-zinc-200 leading-relaxed"><MarkdownText text={response.adminFeedback} /></div>
-                                </div>
-                             ) : <p className="text-xs text-zinc-600 dark:text-zinc-400 italic flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 p-3 rounded-lg"><Icon name="clock" className="w-3 h-3" /> Waiting for coach review...</p>}
-                             <CommentsSection responseId={response.id} comments={response.comments} onAddComment={onAddComment} onEditComment={onEditComment} onDeleteComment={onDeleteComment} currentUser={currentUser} />
-                        </div>
-                    )}
-                </div>
-            );
+        // UI elements
+        const loading = document.getElementById('loading');
+        const checklistSection = document.getElementById('checklist-section');
+        const loginFormContainer = document.getElementById('login-form-container');
+        const userEmailDisplay = document.getElementById('user-email');
+        const userInfo = document.getElementById('user-info');
+        const addForm = document.getElementById('add-task-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const checklistSelector = document.getElementById('checklist-selector');
+        const suggestionForm = document.getElementById('suggestion-form');
+        const currentChecklistTitle = document.getElementById('current-checklist-title');
+        const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
+        const adminOptions = document.getElementById('admin-options');
+        const agentOptions = document.getElementById('agent-options');
+        const newTaskInput = document.getElementById('new-task-input');
+        const suggestionProcess = document.getElementById('suggestion-process');
+        const suggestionText = document.getElementById('suggestion-text');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const moonIcon = document.getElementById('moon-icon');
+        const sunIcon = document.getElementById('sun-icon');
+        const suggestionModal = document.getElementById('suggestion-modal');
+        const messageBox = document.getElementById('message-box');
+        const ticketLinkInput = document.getElementById('ticket-link-input');
+        const submitTicketBtn = document.getElementById('submit-ticket-btn');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const passwordResetModal = document.getElementById('password-reset-modal');
+        const passwordResetForm = document.getElementById('password-reset-form');
+
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = `message-box show ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
         }
 
-        const AdminResponseCard = ({ response, onPostFeedback, onDeleteFeedback, onAddComment, onEditComment, onDeleteComment, currentUser }) => {
-            const [isOpen, setIsOpen] = useState(false);
-            const hasFeedback = !!response.adminFeedback;
-
-            return (
-                <div className="bg-white dark:bg-tempo-darkcard border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors" onClick={() => setIsOpen(!isOpen)}>
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-tempo-gold/20 text-tempo-gold flex items-center justify-center text-xs font-bold"><Icon name="user" className="w-3.5 h-3.5" /></div>
-                            <div className="flex flex-col">
-                                <span className="text-sm font-bold text-zinc-800 dark:text-white">{response.userName}</span>
-                                <span className="text-[10px] text-zinc-600 dark:text-zinc-400">{formatDate(response.timestamp)}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            {hasFeedback ? <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1"><Icon name="check" className="w-3 h-3" /> Reviewed</span> : <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Pending</span>}
-                            <div className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}><Icon name="chevron-down" className="w-4 h-4 text-zinc-400" /></div>
-                        </div>
-                    </div>
-                    {isOpen && (
-                        <div className="p-5 border-t border-zinc-100 dark:border-zinc-700 bg-zinc-50/30 dark:bg-zinc-800/20">
-                            <div className="mb-4">
-                                <span className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400 block mb-1.5">Agent Response</span>
-                                <div className="text-sm text-zinc-900 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap p-3 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700"><MarkdownText text={response.responseContent} /></div>
-                            </div>
-                            <FeedbackInput response={response} onPostFeedback={onPostFeedback} onDeleteFeedback={onDeleteFeedback} />
-                            <CommentsSection responseId={response.id} comments={response.comments} onAddComment={onAddComment} onEditComment={onEditComment} onDeleteComment={onDeleteComment} currentUser={currentUser} />
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const AdminView = ({ prompts, responses, handleCreatePrompt, handleDeletePrompt, handleFeedback, handleDeleteFeedback, handleAddComment, onEditComment, onDeleteComment, activeTab, setActiveTab, currentUser, users }) => {
-            const [expanded, setExpanded] = useState(null);
-            const [newContent, setNewContent] = useState('');
-            const [attachmentUrl, setAttachmentUrl] = useState('');
-            const [assignTo, setAssignTo] = useState([]);
-            const [showAgentSelector, setShowAgentSelector] = useState(false);
-            
-            const filtered = prompts.filter(p => p.type === activeTab);
-            const mode = MODES[activeTab.toUpperCase()];
-
-            const handleCreate = (e) => {
-                e.preventDefault();
-                if(!newContent.trim()) return;
-                handleCreatePrompt(newContent, attachmentUrl, assignTo.length > 0 ? assignTo : null);
-                setNewContent(''); setAttachmentUrl(''); setAssignTo([]);
-            };
-            
-            const toggleAgent = (email) => {
-                if(assignTo.includes(email)) setAssignTo(assignTo.filter(e => e !== email));
-                else setAssignTo([...assignTo, email]);
-            };
-
-            return (
-                <div className="space-y-8">
-                    <div className="bg-white dark:bg-tempo-darkcard p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-lg shadow-zinc-200/50 dark:shadow-none fade-in">
-                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-tempo-purple dark:text-white">
-                            <div className={`p-1.5 rounded-lg ${mode.bg} text-white`}><Icon name="plus" className="w-4 h-4" /></div> 
-                            Create {mode.label}
-                        </h3>
-                        <form onSubmit={handleCreate}>
-                            <div className="mb-4">
-                                <RichTextEditor value={newContent} onChange={setNewContent} placeholder={`Type ${activeTab.toUpperCase()} content here...`} />
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-3 mb-4">
-                                <div className="flex-1 min-w-[200px]">
-                                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1">Attachment URL</label>
-                                    <input type="text" value={attachmentUrl} onChange={e => setAttachmentUrl(e.target.value)} placeholder="https://..." className="w-full p-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-tempo-darkinput text-zinc-900 dark:text-white focus:ring-1 focus:ring-tempo-purple outline-none" />
-                                </div>
-                                
-                                <div className="flex-1 min-w-[200px] relative">
-                                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1">Assign To</label>
-                                    <button type="button" onClick={() => setShowAgentSelector(!showAgentSelector)} className="w-full p-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-tempo-darkinput text-left flex justify-between items-center">
-                                        <span className="truncate text-zinc-700 dark:text-zinc-300">{assignTo.length === 0 ? 'All Agents' : `${assignTo.length} Selected`}</span>
-                                        <Icon name="chevron-down" className="w-4 h-4" />
-                                    </button>
-                                    
-                                    {showAgentSelector && (
-                                        <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto p-2">
-                                            <button type="button" onClick={() => setAssignTo([])} className={`w-full text-left px-2 py-1.5 rounded text-sm ${assignTo.length === 0 ? 'bg-tempo-purple text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'}`}>All Agents</button>
-                                            {users.map(u => (
-                                                <button key={u.email} type="button" onClick={() => toggleAgent(u.email)} className={`w-full text-left px-2 py-1.5 rounded text-sm mt-1 flex justify-between items-center ${assignTo.includes(u.email) ? 'bg-purple-100 dark:bg-purple-900/30 text-tempo-purple dark:text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'}`}>
-                                                    {u.displayName || u.email}
-                                                    {assignTo.includes(u.email) && <Icon name="check" className="w-3 h-3" />}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {showAgentSelector && <div className="fixed inset-0 z-10" onClick={() => setShowAgentSelector(false)}></div>}
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end">
-                                <button className="bg-tempo-purple text-white px-8 py-2.5 rounded-xl font-bold hover:opacity-90 transition shadow-md hover:shadow-lg hover:-translate-y-0.5 active:bg-green-600">Post Challenge</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div className="space-y-4 fade-in">
-                        <div className="flex items-center justify-between px-2">
-                            <h3 className="text-xs font-extrabold uppercase text-zinc-600 dark:text-zinc-400 tracking-widest">Active Prompts</h3>
-                            <span className="text-xs font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md text-zinc-700 dark:text-zinc-400">{filtered.length}</span>
-                        </div>
-                        
-                        {filtered.length === 0 && (
-                            <div className="text-center py-12 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
-                                <p className="text-zinc-600 dark:text-zinc-400 font-medium">No active prompts found.</p>
-                            </div>
-                        )}
-
-                        {filtered.map(p => {
-                            const promptResponses = responses.filter(r => r.promptId === p.id);
-                            const isOpen = expanded === p.id;
-                            
-                            return (
-                                <div key={p.id} className="bg-white dark:bg-tempo-darkcard rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-all">
-                                    <div className={`p-5 cursor-pointer transition ${isOpen ? 'bg-zinc-50 dark:bg-zinc-800' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'}`} onClick={() => setExpanded(isOpen ? null : p.id)}>
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1 pr-4">
-                                                <div className="font-bold text-tempo-purple dark:text-white text-base"><MarkdownText text={p.content} /></div>
-                                                <div className="mt-3 flex gap-4 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                                                    <span className="flex items-center gap-1.5"><Icon name="clock" className="w-3 h-3" /> {formatDate(p.createdAt)}</span>
-                                                    <span className={`flex items-center gap-1.5 ${promptResponses.length > 0 ? 'text-tempo-blue' : ''}`}><Icon name="users" className="w-3 h-3" /> {promptResponses.length} responses</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-3">
-                                                <button onClick={(e) => {e.stopPropagation(); handleDeletePrompt(p.id)}} className="text-zinc-300 hover:text-tempo-red p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"><Icon name="trash-2" className="w-4 h-4" /></button>
-                                                <div className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 p-1.5 rounded-full transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
-                                                    <Icon name="chevron-down" className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {isOpen && (
-                                        <div className="bg-zinc-50 dark:bg-zinc-800 p-6 border-t border-zinc-200 dark:border-zinc-700 space-y-4">
-                                            {promptResponses.length === 0 && <div className="text-center py-4 text-sm text-zinc-600 dark:text-zinc-400 italic bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-zinc-700">No agent responses yet.</div>}
-                                            {promptResponses.map(r => (
-                                                <AdminResponseCard 
-                                                    key={r.id} response={r} onPostFeedback={handleFeedback} onDeleteFeedback={handleDeleteFeedback}
-                                                    onAddComment={handleAddComment} onEditComment={onEditComment} onDeleteComment={onDeleteComment} currentUser={currentUser}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        }
-
-        // --- MAIN APP LOGIC ---
-        const App = () => {
-            const [theme, setTheme] = useState('light');
-            const [user, setUser] = useState(null);
-            const [userRole, setUserRole] = useState('agent');
-            const [activeTab, setActiveTab] = useState('sms');
-            const [prompts, setPrompts] = useState([]);
-            const [responses, setResponses] = useState([]);
-            const [users, setUsers] = useState([]); 
-            const [loadingAuth, setLoadingAuth] = useState(true);
-
-            const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-            useEffect(() => { if (theme === 'dark') document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [theme]);
-
-            useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged(async (u) => {
-                    if(u) {
-                        await db.collection('users').doc(u.uid).set({
-                            email: u.email,
-                            displayName: u.displayName,
-                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                        }, { merge: true });
-
-                        if(ADMIN_EMAILS.includes(u.email.toLowerCase())) setUserRole('admin');
-                        else setUserRole('agent');
+        /**
+         * Checks if a master checklist exists and initializes it with default tasks if not.
+         * NOTE: This requires the authenticated user (admin) to have write permission to the public/data/checklists path.
+         */
+        async function initializeMasterChecklists() {
+            for (const checklistName of Object.keys(DEFAULT_MASTER_TASKS)) {
+                const docRef = doc(db, `artifacts/${appId}/public/data/checklists/${checklistName}`);
+                try {
+                    const docSnap = await getDoc(docRef);
+                    if (!docSnap.exists() || !docSnap.data().tasks || docSnap.data().tasks.length === 0) {
+                        console.log(`Initializing master checklist: ${checklistName}`);
+                        await setDoc(docRef, { tasks: DEFAULT_MASTER_TASKS[checklistName] }, { merge: true });
                     }
-                    setUser(u);
-                    setLoadingAuth(false);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            useEffect(() => {
-                if (!user) return;
-                const unsubPrompts = db.collection('prompts').orderBy('createdAt', 'desc').onSnapshot(snap => setPrompts(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-                const unsubResponses = db.collection('responses').orderBy('timestamp', 'desc').onSnapshot(snap => setResponses(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-                let unsubUsers = () => {};
-                if (ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-                     unsubUsers = db.collection('users').onSnapshot(snap => setUsers(snap.docs.map(d => d.data())));
+                } catch (e) {
+                    if (e.code === 'permission-denied' || e.message.includes('Missing or insufficient permissions')) {
+                         showMessage("Initialization Failed: Insufficient permissions to create master checklists. Check your Firestore Security Rules!", "error");
+                    }
+                    console.error(`Error initializing master checklist ${checklistName}:`, e);
                 }
-                return () => { unsubPrompts(); unsubResponses(); unsubUsers(); };
-            }, [user]);
-
-            const handleSignIn = (email, pass) => auth.signInWithEmailAndPassword(email, pass);
-            const handleSignUp = async (email, pass, name) => {
-                const cred = await auth.createUserWithEmailAndPassword(email, pass);
-                return cred.user.updateProfile({ displayName: name });
-            };
-            const handleSignOut = () => auth.signOut();
-
-            const handleCreatePrompt = async (content, attachment, assignedTo) => {
-                await db.collection('prompts').add({
-                    type: activeTab, content, attachmentUrl: attachment || null, assignedTo: assignedTo || null,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: user.uid
-                });
-            };
-            const handleDeletePrompt = (id) => db.collection('prompts').doc(id).delete();
-
-            const handleSubmitResponse = (pid, text) => {
-                db.collection('responses').add({
-                    promptId: pid, userId: user.uid, userName: user.displayName || 'Agent',
-                    userEmail: user.email, 
-                    responseContent: text, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    adminFeedback: null, feedbackTimestamp: null, comments: []
-                });
-            };
-
-            const handleFeedback = (rid, text, score) => {
-                db.collection('responses').doc(rid).update({
-                    adminFeedback: text, score: score,
-                    feedbackTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    feedbackAuthor: user.email 
-                });
-            };
-            const handleDeleteFeedback = (rid) => db.collection('responses').doc(rid).update({ adminFeedback: null, feedbackTimestamp: null, score: 0, feedbackAuthor: null });
-
-            const handleAddComment = (rid, text) => {
-                db.collection('responses').doc(rid).update({
-                    comments: firebase.firestore.FieldValue.arrayUnion({
-                        text: text, author: user.displayName || user.email, email: user.email, timestamp: Date.now()
-                    })
-                });
-            };
-            const handleEditComment = (rid, index, newText) => {
-                const r = responses.find(r => r.id === rid); if(!r) return;
-                const updated = [...(r.comments || [])]; updated[index] = { ...updated[index], text: newText, edited: true };
-                db.collection('responses').doc(rid).update({ comments: updated });
             }
-            const handleDeleteComment = (rid, index) => {
-                const r = responses.find(r => r.id === rid); if(!r) return;
-                const updated = (r.comments || []).filter((_, idx) => idx !== i);
-                db.collection('responses').doc(rid).update({ comments: updated });
+        }
+
+        async function initFirebaseAndApp() {
+            // Note: This app uses hardcoded Firebase config from the provided code.
+            const firebaseConfig = {
+              apiKey: "AIzaSyDkKiTkVRFKYproZrT6i9MSEKS9kmhFQa0",
+              authDomain: "checklist-1b356.firebaseapp.com",
+              projectId: "checklist-1b356",
+              storageBucket: "checklist-1b356.firebasestorage.app",
+              messagingSenderId: "509961792596",
+              appId: "1:509961792596:web:dbfa4dc2541b97aff691c1",
+              measurementId: "G-0VZRDH8ENT"
+            };
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // CRITICAL FIX: Explicitly use the hardcoded Firebase App ID to ensure consistency, 
+                // ignoring any environment-specific overrides like __app_id.
+                appId = firebaseConfig.appId;
+                
+                await setPersistence(auth, browserLocalPersistence);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        // 1. Authenticated actions
+                        userEmailDisplay.textContent = user.email;
+                        loginFormContainer.classList.add('hidden');
+                        userInfo.classList.remove('hidden');
+                        
+                        // 2. Determine Role
+                        try { 
+                            const userDocRef = doc(db, `artifacts/${appId}/users`, user.uid);
+                            const userDocSnap = await getDoc(userDocRef);
+                            userRole = userDocSnap.exists() ? userDocSnap.data().role : 'agent';
+                            console.log(`User role determined as: ${userRole}. User UID: ${user.uid}`);
+                        } catch (e) {
+                            console.error(`Error determining user role. Assuming agent role. UID: ${user.uid}`, e);
+                            userRole = 'agent';
+                            // IMPROVED MESSAGE: Be explicit about the security rule needed for the user role document
+                            showMessage(`Could not retrieve user role document. Assuming agent permissions. **FIX: Set read permission for artifacts/${appId}/users/${user.uid}**`, "error");
+                        }
+
+                        // Only attempt to initialize (create/write) the master lists if the user is an admin.
+                        if (userRole === 'admin') {
+                            await initializeMasterChecklists();
+                        } else {
+                            console.log("Skipping master checklist initialization: User is not an admin.");
+                        }
+                        
+                        // 3. Update UI and Start Listeners
+                        updateUI(userRole);
+                        startListeningToMasterChecklists();
+                        
+                    } else {
+                        // Logged out actions
+                        userEmailDisplay.textContent = '';
+                        loginFormContainer.classList.remove('hidden');
+                        userInfo.classList.add('hidden');
+                        checklistSection.classList.add('hidden');
+                        loading.classList.add('hidden');
+                    }
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showMessage("Failed to connect to the dashboard. Please check your Firebase config.", "error");
+                loading.classList.add('hidden');
+                loginFormContainer.classList.remove('hidden');
+            }
+        }
+        
+        function updateUI(role) {
+            if (role === 'admin') {
+                if (adminOptions) adminOptions.classList.remove('hidden');
+                if (agentOptions) agentOptions.classList.add('hidden');
+            } else {
+                if (adminOptions) adminOptions.classList.add('hidden');
+                if (agentOptions) agentOptions.classList.remove('hidden');
+            }
+            if (checklistSection) {
+                checklistSection.classList.remove('hidden');
+            }
+            loading.classList.add('hidden');
+        }
+        
+        // --- DRAG AND DROP HANDLERS ---
+        function handleDragStart(e) {
+            // Only allow agents to drag/drop their personal checklist order
+            if (userRole === 'admin') return; 
+
+            draggedElement = e.target;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', draggedElement.innerHTML);
+            setTimeout(() => {
+                draggedElement.classList.add('dragging');
+            }, 0);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault(); 
+            e.dataTransfer.dropEffect = 'move';
+
+            const target = e.target.closest('.task-item');
+            if (target && draggedElement !== target) {
+                // Highlight where the item would drop
+                const rect = target.getBoundingClientRect();
+                const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                taskList.insertBefore(draggedElement, next && target.nextSibling || target);
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            draggedElement.classList.remove('dragging');
+            
+            const nodes = Array.from(taskList.children).filter(node => node.classList.contains('task-item'));
+            const newOrder = nodes.map(node => ({
+                name: node.querySelector('.task-text').textContent,
+                completed: node.querySelector('.task-checkbox').checked
+            }));
+            
+            updateUserTasks(newOrder);
+        }
+
+        function handleDragEnd(e) {
+            draggedElement.classList.remove('dragging');
+            draggedElement = null;
+        }
+        
+        // --- TASK EDITING HANDLERS (ADMIN ONLY) ---
+        function startEditing(taskItem, taskText, taskIndex) {
+            if (userRole !== 'admin') return;
+            if (taskItem.querySelector('input[type="text"]')) return; // Already editing
+            
+            const currentText = taskText.textContent;
+            
+            // Create the input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentText;
+            input.className = 'flex-1 rounded-md border border-blue-500 bg-gray-700 text-white p-1 ml-4 focus:outline-none';
+            
+            // Replace the task text with the input field
+            taskItem.replaceChild(input, taskText);
+            input.focus();
+
+            // Save function
+            const saveEdit = async () => {
+                const newName = input.value.trim();
+                
+                if (newName && newName !== currentText) {
+                    await editMasterTask(taskIndex, newName);
+                }
+                
+                // Revert to paragraph element
+                const newTaskText = document.createElement('p');
+                newTaskText.className = taskText.className;
+                newTaskText.textContent = newName || currentText;
+                newTaskText.ondblclick = () => startEditing(taskItem, newTaskText, taskIndex);
+                
+                taskItem.replaceChild(newTaskText, input);
+            };
+
+            // Event listeners for saving
+            input.addEventListener('blur', saveEdit);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEdit();
+                }
+            });
+        }
+        
+        async function editMasterTask(taskIndex, newName) {
+            try {
+                const currentChecklistName = checklistSelector.value;
+                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const tasks = masterChecklists[currentChecklistName];
+
+                if (!tasks[taskIndex]) throw new Error("Task not found for editing.");
+
+                // Create a copy of the tasks array
+                const updatedTasks = [...tasks];
+                updatedTasks[taskIndex].name = newName;
+                
+                await updateDoc(checklistRef, { tasks: updatedTasks });
+                showMessage("Master task updated!");
+            } catch (error) {
+                console.error("Error editing master task:", error);
+                showMessage("Failed to edit task.", "error");
+            }
+        }
+        
+        async function updateUserTasks(newTasks) {
+            const user = auth.currentUser;
+            const currentChecklistName = checklistSelector.value;
+            const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+            
+            try {
+                 await setDoc(userDocRef, { tasks: newTasks }, { merge: true });
+                 showMessage("Task order updated!");
+            } catch (error) {
+                console.error("Error updating user tasks:", error);
+                showMessage("Failed to save new task order.", "error");
+            }
+        }
+
+        function renderChecklist(tasks) {
+            const currentChecklistName = checklistSelector.value;
+            currentChecklistTitle.textContent = `${checklistSelector.options[checklistSelector.selectedIndex].text} Checklist Items`;
+            taskList.innerHTML = '';
+            
+            // Clear Completed Button Logic
+            const clearCompletedBtn = document.getElementById('clear-completed-btn');
+            if (tasks.some(task => task.completed)) {
+                if (!clearCompletedBtn) {
+                    const btn = document.createElement('button');
+                    btn.id = 'clear-completed-btn';
+                    btn.textContent = 'Clear Completed';
+                    btn.className = 'bg-red-600 text-white font-semibold rounded-lg p-3 hover:bg-red-500 transition-colors mt-4 mx-auto block';
+                    btn.addEventListener('click', clearAllCheckboxes);
+                    document.getElementById('task-list-wrapper').appendChild(btn);
+                }
+            } else if (clearCompletedBtn) {
+                clearCompletedBtn.remove();
             }
 
-            if(loadingAuth) return <div className="min-h-screen flex items-center justify-center text-tempo-blue font-bold animate-pulse bg-zinc-50 dark:bg-zinc-950">Loading...</div>;
-            if (!user) return <LoginScreen onSignIn={handleSignIn} onSignUp={handleSignUp} theme={theme} toggleTheme={toggleTheme} />;
+            if (tasks.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                tasks.forEach((task, index) => {
+                    const taskItem = document.createElement('div');
+                    const isCompleted = task.completed;
+                    const taskStatusClass = isCompleted ? 'completed' : 'text-gray-100';
+                    taskItem.className = `task-item flex items-center p-4 rounded-lg transition-colors relative ${isCompleted ? 'bg-gray-700 completed' : 'bg-gray-800 hover:bg-gray-700'}`;
+                    
+                    // Drag and Drop attributes (only for Agents, Admins edit the master list)
+                    taskItem.draggable = userRole !== 'admin';
+                    taskItem.dataset.index = index; // Store index for reordering
 
-            const myResponseIds = responses.filter(r => r.userId === user.uid).map(r => r.promptId);
-            const currentPrompts = prompts.filter(p => p.type === activeTab);
-            const visiblePrompts = userRole === 'admin' ? currentPrompts : currentPrompts.filter(p => !p.assignedTo || p.assignedTo.includes(user.email));
-            const activeChallenges = visiblePrompts.filter(p => !myResponseIds.includes(p.id));
-            const myHistory = responses.filter(r => r.userId === user.uid && currentPrompts.find(p => p.id === r.promptId));
-            const getCount = (type) => prompts.filter(p => p.type === type && (!p.assignedTo || p.assignedTo.includes(user.email)) && !myResponseIds.includes(p.id)).length;
+                    // Add drag/drop listeners only if not an admin (admins shouldn't reorder their private copy)
+                    if (userRole !== 'admin') {
+                        taskItem.addEventListener('dragstart', handleDragStart);
+                        taskItem.addEventListener('dragover', handleDragOver);
+                        taskItem.addEventListener('dragleave', (e) => e.target.closest('.task-item')?.classList.remove('drag-over'));
+                        taskItem.addEventListener('drop', handleDrop);
+                        taskItem.addEventListener('dragend', handleDragEnd);
+                        taskItem.classList.add('draggable');
+                    }
 
-            return (
-                <div className="pb-20">
-                    <Header theme={theme} toggleTheme={toggleTheme} userRole={userRole} currentUser={user} onSignOut={handleSignOut} />
-                    <main className="max-w-4xl mx-auto px-4 py-8 relative z-10">
-                        <div className="flex bg-white dark:bg-zinc-900 p-1.5 rounded-2xl mb-10 shadow-sm border border-zinc-100 dark:border-zinc-800">
-                            {['sms', 'quiz'].map(t => {
-                                const count = getCount(t);
-                                const isActive = activeTab === t;
-                                const mode = MODES[t.toUpperCase()];
-                                return (
-                                    <button key={t} onClick={() => setActiveTab(t)} className={`flex-1 relative py-3 rounded-xl text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 ${isActive ? `${mode.bg} text-white shadow-md` : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}>
-                                        <Icon name={mode.iconName} className="w-4 h-4" /> {mode.label}
-                                        {userRole === 'agent' && count > 0 && <NotificationBadge count={count} modeBgClass={isActive ? 'bg-tempo-gold' : 'bg-tempo-red'} />}
-                                    </button>
-                                )
-                            })}
-                        </div>
-                        {userRole === 'admin' ? (
-                            <AdminView 
-                                prompts={prompts} responses={responses} users={users} 
-                                handleCreatePrompt={handleCreatePrompt} handleDeletePrompt={handleDeletePrompt} 
-                                handleFeedback={handleFeedback} handleDeleteFeedback={handleDeleteFeedback} handleAddComment={handleAddComment} 
-                                onEditComment={handleEditComment} onDeleteComment={handleDeleteComment} activeTab={activeTab} setActiveTab={setActiveTab} currentUser={user}
-                            />
-                        ) : (
-                            <div className="space-y-10 fade-in">
-                                <div className="space-y-5">
-                                    <div className="flex items-center justify-between px-1">
-                                        <h3 className="text-xs font-extrabold uppercase text-tempo-blue tracking-widest flex items-center gap-2">Active Challenges</h3>
-                                        <span className="bg-tempo-orange/10 text-tempo-orange px-2 py-0.5 rounded-md text-xs font-bold">{activeChallenges.length} New</span>
-                                    </div>
-                                    {activeChallenges.length === 0 && <div className="text-center py-16 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-white dark:bg-zinc-900"><div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-3"><Icon name="check" className="text-green-600 dark:text-green-500 w-6 h-6" /></div><p className="text-zinc-900 dark:text-white font-bold">All caught up!</p><p className="text-zinc-600 dark:text-zinc-400 text-sm">Great job, no new challenges.</p></div>}
-                                    {activeChallenges.map(p => <ResponseCard key={p.id} prompt={p} mode={MODES[activeTab.toUpperCase()]} onSubmit={handleSubmitResponse} />)}
-                                </div>
-                                <div className="space-y-5 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-                                    <h3 className="text-xs font-extrabold uppercase text-tempo-blue tracking-widest px-1">My History</h3>
-                                    {myHistory.length === 0 && <div className="text-center py-8 text-zinc-600 dark:text-zinc-400 text-sm italic">No submissions yet.</div>}
-                                    {myHistory.map(r => <HistoryCard key={r.id} response={r} allPrompts={prompts} currentUser={user} onAddComment={handleAddComment} onEditComment={handleEditComment} onDeleteComment={handleDeleteComment} />)}
-                                </div>
-                            </div>
-                        )}
-                    </main>
-                </div>
-            );
-        };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'task-checkbox';
+                    checkbox.dataset.index = index;
+                    if (isCompleted) checkbox.checked = true;
+
+                    checkbox.addEventListener('change', (e) => {
+                        toggleTaskStatus(e.target.dataset.index);
+                    });
+                    
+                    const taskText = document.createElement('p');
+                    taskText.className = `task-text ml-4 ${taskStatusClass} text-lg font-medium flex-1`;
+                    taskText.textContent = task.name;
+                    
+                    // Inline Edit Option (Admin only)
+                    if (userRole === 'admin') {
+                        taskText.ondblclick = () => startEditing(taskItem, taskText, index);
+                        taskText.title = "Double-click to edit (Admin only)";
+                    }
+                    
+                    taskItem.appendChild(checkbox);
+                    taskItem.appendChild(taskText);
+
+                    if (userRole === 'admin') {
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.className = 'delete-btn ml-4';
+                        deleteBtn.dataset.index = index;
+                        deleteBtn.addEventListener('click', (e) => {
+                            deleteTask(e.target.dataset.index);
+                        });
+                        taskItem.appendChild(deleteBtn);
+                    }
+                    taskList.appendChild(taskItem);
+                });
+            }
+        }
+        
+        async function startListeningToMasterChecklists() {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+            const user = auth.currentUser;
+            if (!user) {
+                // Ensure UI is fully loaded even if no user is present (to show login form)
+                loading.classList.add('hidden');
+                loginFormContainer.classList.remove('hidden');
+                return;
+            }
+
+            const currentChecklistName = checklistSelector.value;
+            // Master checklist data path: artifacts/{appId}/public/data/checklists/{checklistName}
+            const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+            
+            // 1. Listen to the master checklist for global updates (add/delete/edit by admin)
+            unsubscribe = onSnapshot(masterChecklistRef, (masterDocSnap) => {
+                if (masterDocSnap.exists()) {
+                    masterChecklists[currentChecklistName] = masterDocSnap.data().tasks || [];
+                } else {
+                    masterChecklists[currentChecklistName] = [];
+                }
+                
+                // 2. Now, get the user's specific checklist.
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+                
+                // FIX: Added error handler to the inner snapshot listener to prevent uncaught exceptions.
+                onSnapshot(userDocRef, (userDocSnap) => {
+                    let userTasks;
+                    if (userDocSnap.exists()) {
+                        // If the user has a private list, use it.
+                        userTasks = userDocSnap.data().tasks || [];
+                        
+                        // A necessary cleanup/sync: if the master list has new items, or old ones were deleted, sync the user's list.
+                        const syncedTasks = masterChecklists[currentChecklistName].map(masterTask => {
+                            // Find matching task by name in the user's current list
+                            const existing = userTasks.find(userTask => userTask.name === masterTask.name);
+                            // If found, keep its completed status, otherwise use the master's uncompleted status
+                            return existing ? { ...masterTask, completed: existing.completed } : masterTask;
+                        }).filter(task => masterChecklists[currentChecklistName].some(mt => mt.name === task.name)); // Filter out tasks deleted from master list
+
+                        userTasks = syncedTasks;
+                        
+                        renderChecklist(userTasks);
+                    } else {
+                        // If no user list, create a deep copy of the current master list and render it.
+                        userTasks = JSON.parse(JSON.stringify(masterChecklists[currentChecklistName]));
+                        renderChecklist(userTasks);
+                        // Try to create the doc immediately so future updates work via transaction/updateDoc
+                        setDoc(userDocRef, { tasks: userTasks }, { merge: true }).catch(err => console.error("Error creating initial user doc:", err));
+                    }
+                    
+                    loading.classList.add('hidden');
+                    checklistSection.classList.remove('hidden');
+                }, (error) => {
+                     // Inner error handler for user's private checklist read failures
+                    console.error("Error listening to user checklist changes:", error);
+                    showMessage("Failed to load personal checklist progress. Displaying default master list. **FIX: Set read/write permission for /users/{userId}/checklists**", "error");
+                    
+                    // Fallback to render the public master list if the private read fails
+                    const masterTasks = masterChecklists[currentChecklistName] || [];
+                    renderChecklist(masterTasks);
+                    loading.classList.add('hidden');
+                    checklistSection.classList.remove('hidden');
+                });
+            }, (error) => {
+                // Outer error handler for master checklist read failures
+                console.error("Error listening to master checklist changes:", error);
+                showMessage("Failed to load master checklists. Check your Firestore security rules.", "error");
+                
+                // Ensure UI is unblocked
+                loading.classList.add('hidden');
+                checklistSection.classList.remove('hidden');
+            });
+        }
+        
+        async function toggleTaskStatus(taskIndex) {
+            try {
+                const user = auth.currentUser;
+                const currentChecklistName = checklistSelector.value;
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+                
+                await runTransaction(db, async (transaction) => {
+                    const userDocSnap = await transaction.get(userDocRef);
+                    let userTasks;
+
+                    if (!userDocSnap.exists()) {
+                        // Fallback to get master tasks if user doc doesn't exist (should be rare now)
+                        const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                        const masterDocSnap = await getDoc(masterChecklistRef);
+                        const masterTasks = masterDocSnap.exists() ? masterDocSnap.data().tasks : [];
+                        userTasks = JSON.parse(JSON.stringify(masterTasks));
+                        transaction.set(userDocRef, { tasks: userTasks });
+                    } else {
+                        userTasks = userDocSnap.data().tasks;
+                    }
+                    
+                    if (userTasks[taskIndex]) {
+                       userTasks[taskIndex].completed = !userTasks[taskIndex].completed;
+                       transaction.update(userDocRef, { tasks: userTasks });
+                    } else {
+                        throw new Error("Task index out of bounds.");
+                    }
+                });
+                showMessage("Task status updated!");
+            } catch (error) {
+                console.error("Error updating task status:", error);
+                showMessage("Failed to update task status. Please verify your private data security rules.", "error");
+            }
+        }
+        
+        async function clearAllCheckboxes() {
+            try {
+                const user = auth.currentUser;
+                const currentChecklistName = checklistSelector.value;
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+                
+                // Get the original master tasks to reset the user's checklist
+                const masterChecklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const masterDocSnap = await getDoc(masterChecklistRef);
+                const masterTasks = masterDocSnap.exists() ? masterDocSnap.data().tasks : [];
+
+                // Create a fresh list of uncompleted tasks from the master list
+                const resetTasks = masterTasks.map(task => ({ ...task, completed: false }));
+
+                // Replace the user's checklist with a fresh copy of the master tasks (which are uncompleted)
+                await setDoc(userDocRef, { tasks: resetTasks });
+
+                showMessage("Checkboxes cleared!");
+            } catch (error) {
+                console.error("Error clearing checkboxes:", error);
+                showMessage("Failed to clear checkboxes.", "error");
+            }
+        }
+
+        async function addTask(e) {
+            e.preventDefault();
+            const taskName = newTaskInput.value.trim();
+            if (!taskName) return;
+            
+            try {
+                const currentChecklistName = checklistSelector.value;
+                // Master checklist path
+                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const tasks = masterChecklists[currentChecklistName] || [];
+                const newTasks = [...tasks, { name: taskName, completed: false }];
+                await updateDoc(checklistRef, { tasks: newTasks });
+                newTaskInput.value = '';
+                showMessage("Task added to master checklist!");
+            } catch (error) {
+                console.error("Error adding task:", error);
+                showMessage("Failed to add task.", "error");
+            }
+        }
+
+        async function deleteTask(taskIndex) {
+            try {
+                const currentChecklistName = checklistSelector.value;
+                // Master checklist path
+                const checklistRef = doc(db, `artifacts/${appId}/public/data/checklists/${currentChecklistName}`);
+                const tasks = masterChecklists[currentChecklistName];
+                // Filter the task out and update the master list
+                const updatedTasks = tasks.filter((_, index) => index != taskIndex);
+                await updateDoc(checklistRef, { tasks: updatedTasks });
+                showMessage("Task deleted from master checklist!");
+            } catch (error) {
+                console.error("Error deleting task:", error);
+                showMessage("Failed to delete task.", "error");
+            }
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            const password = document.getElementById('password-input').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showMessage("Login successful!");
+            } catch (error) {
+                console.error("Login failed:", error);
+                showMessage("Login failed. Check your email and password.", "error");
+            }
+        }
+
+        async function handlePasswordReset(e) {
+            e.preventDefault();
+            const email = document.getElementById('password-reset-email').value;
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showMessage("Password reset email sent. Check your inbox.");
+                closeModal('password-reset-modal');
+            } catch (error) {
+                console.error("Password reset failed:", error);
+                showMessage(`Failed to send reset email: ${error.message}`, 'error');
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                showMessage("Logged out successfully.");
+            } catch (error) {
+                console.error("Logout failed:", error);
+                showMessage("Logout failed.", "error");
+            }
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        async function submitSuggestion(e) {
+            e.preventDefault();
+            const process = suggestionProcess.value;
+            const suggestion = suggestionText.value;
+            const user = auth.currentUser;
+            
+            if (!user) {
+                showMessage("You must be logged in to submit a suggestion.", "error");
+                closeModal('suggestion-modal');
+                return;
+            }
+            
+            const suggestionData = {
+                process: process,
+                suggestion: suggestion,
+                submittedBy: user.email,
+                submittedAt: new Date()
+            };
+
+            try {
+                // Suggestions are public data: artifacts/{appId}/public/data/suggestions
+                const suggestionsCollectionRef = collection(db, `artifacts/${appId}/public/data/suggestions`);
+                await addDoc(suggestionsCollectionRef, suggestionData);
+                showMessage("Suggestion submitted! Thank you for your feedback.");
+                closeModal('suggestion-modal');
+                suggestionForm.reset();
+            } catch (error) {
+                console.error("Error submitting suggestion:", error);
+                showMessage(`Failed to submit suggestion: ${error.message}`, "error");
+            }
+        }
+
+        async function submitTicket(e) {
+            e.preventDefault();
+            const ticketLink = ticketLinkInput.value.trim();
+            if (!ticketLink) {
+                showMessage("Please enter a ticket link.", "error");
+                return;
+            }
+            
+            const user = auth.currentUser;
+            if (!user) {
+                showMessage("You must be logged in to submit a ticket.", "error");
+                return;
+            }
+            
+            // Basic regex to extract Freshworks conversation ID
+            const urlMatch = ticketLink.match(/\/conversation\/(\d+)/);
+            const ticketId = urlMatch ? urlMatch[1] : null;
+
+            if (!ticketId) {
+                showMessage("Please enter a valid Freshworks ticket link containing a conversation ID.", "error");
+                return;
+            }
+            
+            const currentChecklistName = checklistSelector.value;
+            const userChecklistRef = doc(db, `artifacts/${appId}/users/${user.uid}/checklists/${currentChecklistName}`);
+            const userDocSnap = await getDoc(userChecklistRef);
+            
+            if (!userDocSnap.exists()) {
+                showMessage("No checklist found to submit. Please select a checklist and check some tasks.", "error");
+                return;
+            }
+            
+            const ticketData = {
+                ticketId: ticketId,
+                ticketLink: ticketLink,
+                checklistName: currentChecklistName,
+                tasks: userDocSnap.data().tasks,
+                submittedAt: new Date(),
+                submittedBy: user.email
+            };
+
+            // Submitted tickets are private user data: artifacts/{appId}/users/{userId}/tickets/{ticketId}
+            const ticketDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/tickets/${ticketId}`);
+
+            try {
+                await setDoc(ticketDocRef, ticketData);
+                showMessage("Ticket submitted successfully! Checklist has been cleared for the next ticket.");
+                clearAllCheckboxes();
+                ticketLinkInput.value = '';
+            } catch (error) {
+                console.error("Error submitting ticket:", error);
+                showMessage(`Failed to submit ticket: ${error.message}`, "error");
+            }
+        }
+        
+        function applyTheme(theme) {
+            const body = document.body;
+            const isDarkMode = theme === 'dark';
+            body.classList.toggle('light-mode', !isDarkMode);
+            if(moonIcon) moonIcon.classList.toggle('hidden', !isDarkMode);
+            if(sunIcon) sunIcon.classList.toggle('hidden', isDarkMode);
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        }
+
+        function getPreferredTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                return savedTheme;
+            }
+            // Use dark mode as the default if no preference is saved
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const preferredTheme = getPreferredTheme();
+            applyTheme(preferredTheme);
+            initFirebaseAndApp();
+            
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', handleLogout);
+            }
+
+            if(suggestionForm) {
+                suggestionForm.addEventListener('submit', submitSuggestion);
+            }
+            
+            if (checklistSelector) {
+                checklistSelector.addEventListener('change', startListeningToMasterChecklists);
+            }
+            
+            if(addForm){
+                 addForm.addEventListener('submit', addTask);
+            }
+            
+            const suggestTaskBtn = document.getElementById('suggest-task-btn');
+            if(suggestTaskBtn){
+                suggestTaskBtn.addEventListener('click', () => {
+                    document.getElementById('suggestion-modal').style.display = 'block';
+                });
+            }
+            
+            if(submitTicketBtn){
+                submitTicketBtn.addEventListener('click', submitTicket);
+            }
+
+            if(forgotPasswordLink){
+                forgotPasswordLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.getElementById('password-reset-modal').style.display = 'block';
+                });
+            }
+            
+            if(passwordResetForm){
+                passwordResetForm.addEventListener('submit', handlePasswordReset);
+            }
+            
+            const closeButtons = document.querySelectorAll('.close-button');
+            closeButtons.forEach(btn => btn.addEventListener('click', () => {
+                btn.closest('.modal').style.display = 'none';
+            }));
+            
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal')) {
+                    e.target.style.display = 'none';
+                }
+            });
+             if(themeToggleBtn){
+                themeToggleBtn.addEventListener('click', () => {
+                    const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                    applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+                });
+            }
+        });
+        
     </script>
 </body>
 </html>
