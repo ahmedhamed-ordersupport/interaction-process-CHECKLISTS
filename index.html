@@ -56,12 +56,12 @@
         }
     </script>
 
-    <!-- 3. React & Babel -->
+    <!-- 3. React & ReactDOM & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- 4. Icons -->
+    <!-- 4. Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- 5. Firebase -->
@@ -70,6 +70,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
+        /* Base styles with dark mode support */
         body { @apply bg-zinc-50 text-zinc-900 dark:bg-tempo-darkbg dark:text-white transition-colors duration-300; overflow-x: hidden; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -95,7 +96,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- CONFIG ---
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyDkXOuZGZ_vMQJPAIFe3ujRAoiN3BLFhoQ",
             authDomain: "os-daily-practice-data.firebaseapp.com",
@@ -106,7 +107,9 @@
             measurementId: "G-47TJTYBX20"
         };
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const auth = firebase.auth();
         const db = firebase.firestore();
 
@@ -272,8 +275,104 @@
             );
         };
 
-        // --- COMPLEX COMPONENTS (Ordered: Comments > Feedback > Response > Admin > App) ---
+        const Header = ({ theme, toggleTheme, userRole, currentUser, onSignOut }) => {
+            return (
+                <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-tempo-darkcard/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm transition-colors duration-300">
+                    <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-tempo-orange p-1.5 rounded-lg shadow-sm"><Icon name="shield" className="text-white w-6 h-6" /></div>
+                            <span className="font-bold text-xl tracking-tight text-tempo-purple dark:text-white">SOS <span className="text-tempo-orange">DAILY PRACTICE</span></span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                             <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-400 transition-colors" title="Toggle Dark Mode">
+                                {theme === 'dark' ? <Icon name="sun" className="w-5 h-5" /> : <Icon name="moon" className="w-5 h-5" />}
+                            </button>
+                            {currentUser && (
+                                <div className="flex items-center gap-3 pl-4 border-l border-zinc-200 dark:border-zinc-700">
+                                    <div className="flex flex-col items-end mr-1 hidden sm:flex">
+                                        <span className="text-xs font-bold text-tempo-purple dark:text-zinc-300">{currentUser.displayName || 'Agent'}</span>
+                                    </div>
+                                    <div className="w-9 h-9 rounded-full bg-tempo-purple text-tempo-yellow flex items-center justify-center text-sm font-bold shadow-sm border-2 border-white dark:border-zinc-800" title={currentUser.email}>
+                                        {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'A'}
+                                    </div>
+                                    <button onClick={onSignOut} className="text-zinc-400 hover:text-tempo-red transition-colors" title="Sign Out"><Icon name="log-out" className="w-5 h-5" /></button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </header>
+            );
+        };
 
+        const LoginScreen = ({ onSignIn, onSignUp, theme, toggleTheme }) => {
+            const [isSignUp, setIsSignUp] = useState(false);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [name, setName] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setError(null);
+                setLoading(true);
+                try {
+                    if (isSignUp) { await onSignUp(email, password, name); } 
+                    else { await onSignIn(email, password); }
+                } catch (err) {
+                    console.error(err);
+                    let msg = err.message;
+                    if (err.code === 'auth/configuration-not-found') msg = "Setup Error: Please enable 'Email/Password' in Firebase Console.";
+                    else if (err.code === 'auth/email-already-in-use') msg = "Email already registered.";
+                    else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') msg = "Invalid email or password.";
+                    else if (err.code === 'auth/weak-password') msg = "Password too short (min 6 chars).";
+                    setError(msg);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-black p-4 font-sans transition-colors duration-300 relative">
+                    <div className="absolute top-4 right-4 z-20">
+                         <button onClick={toggleTheme} className="p-3 rounded-full bg-white dark:bg-zinc-800 shadow-md hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-400 transition-colors">
+                            {theme === 'dark' ? <Icon name="sun" className="w-5 h-5" /> : <Icon name="moon" className="w-5 h-5" />}
+                        </button>
+                    </div>
+                    <div className="w-full max-w-md bg-white dark:bg-tempo-darkcard rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800 p-10 fade-in z-10 relative">
+                        <div className="flex justify-center mb-8">
+                            <div className="w-20 h-20 bg-tempo-orange rounded-3xl flex items-center justify-center shadow-xl shadow-orange-200 dark:shadow-none transform -rotate-3"><Icon name="shield" className="text-white w-10 h-10" /></div>
+                        </div>
+                        <h2 className="text-3xl font-extrabold text-center mb-2 text-tempo-purple dark:text-white">{isSignUp ? 'Join the Team' : 'Welcome Back'}</h2>
+                        <p className="text-center text-zinc-700 dark:text-zinc-400 mb-8 font-medium">{isSignUp ? 'Create your agent profile.' : 'Sign in to access daily challenges.'}</p>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            {isSignUp && (
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="user" className="w-5 h-5" /></div>
+                                    <input type="text" placeholder="Agent Name (e.g. AG101)" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={name} onChange={e => setName(e.target.value)} required />
+                                </div>
+                            )}
+                            <div className="relative group">
+                                <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="mail" className="w-5 h-5" /></div>
+                                <input type="email" placeholder="Email Address" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={email} onChange={e => setEmail(e.target.value)} required />
+                            </div>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="lock" className="w-5 h-5" /></div>
+                                <input type="password" placeholder="Password" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={password} onChange={e => setPassword(e.target.value)} required />
+                            </div>
+                            {error && <div className="p-4 text-sm bg-red-50 dark:bg-red-900/20 text-tempo-red dark:text-red-400 rounded-xl border-l-4 border-tempo-red flex items-start gap-3"><Icon name="alert-circle" className="w-5 h-5 min-w-[20px]" /><span className="font-medium">{error}</span></div>}
+                            <button type="submit" disabled={loading} className="w-full bg-tempo-purple text-white font-bold py-4 rounded-xl hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5 transition-all active:bg-green-600 disabled:opacity-70 disabled:transform-none flex items-center justify-center gap-2 mt-4">{loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')} {!loading && <Icon name="arrow-right" className="w-5 h-5" />}</button>
+                        </form>
+                        <div className="mt-8 text-center">
+                            <button onClick={() => { setIsSignUp(!isSignUp); setError(null); }} className="text-sm text-zinc-700 dark:text-zinc-400 hover:text-tempo-orange font-semibold transition-colors">{isSignUp ? 'Already have an account? Sign In' : 'New agent? Create an account'}</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- COMPLEX COMPONENTS (Properly Ordered) ---
+        
         const CommentsSection = ({ responseId, comments, onAddComment, onEditComment, onDeleteComment, currentUser }) => {
             const [newComment, setNewComment] = useState('');
             const [editingIndex, setEditingIndex] = useState(null);
@@ -376,7 +475,6 @@
             )
         }
 
-        // --- RESPONSE CARD (Agent View) ---
         const ResponseCard = ({ prompt, mode, onSubmit }) => {
             const [text, setText] = useState('');
             const [submitting, setSubmitting] = useState(false);
@@ -420,7 +518,6 @@
             );
         };
 
-        // --- HISTORY CARD (Agent View) ---
         const HistoryCard = ({ response, allPrompts, currentUser, onAddComment, onEditComment, onDeleteComment }) => {
             const [open, setOpen] = useState(false);
             const prompt = allPrompts.find(p => p.id === response.promptId);
@@ -474,7 +571,6 @@
             );
         }
 
-        // --- ADMIN RESPONSE CARD ---
         const AdminResponseCard = ({ response, onPostFeedback, onDeleteFeedback, onAddComment, onEditComment, onDeleteComment, currentUser }) => {
             const [isOpen, setIsOpen] = useState(false);
             const hasFeedback = !!response.adminFeedback;
@@ -630,102 +726,6 @@
             );
         }
 
-        const Header = ({ theme, toggleTheme, userRole, currentUser, onSignOut }) => {
-            return (
-                <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-tempo-darkcard/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm transition-colors duration-300">
-                    <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between relative z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-tempo-orange p-1.5 rounded-lg shadow-sm"><Icon name="shield" className="text-white w-6 h-6" /></div>
-                            <span className="font-bold text-xl tracking-tight text-tempo-purple dark:text-white">SOS <span className="text-tempo-orange">DAILY PRACTICE</span></span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                             <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-400 transition-colors" title="Toggle Dark Mode">
-                                {theme === 'dark' ? <Icon name="sun" className="w-5 h-5" /> : <Icon name="moon" className="w-5 h-5" />}
-                            </button>
-                            {currentUser && (
-                                <div className="flex items-center gap-3 pl-4 border-l border-zinc-200 dark:border-zinc-700">
-                                    <div className="flex flex-col items-end mr-1 hidden sm:flex">
-                                        <span className="text-xs font-bold text-tempo-purple dark:text-zinc-300">{currentUser.displayName || 'Agent'}</span>
-                                    </div>
-                                    <div className="w-9 h-9 rounded-full bg-tempo-purple text-tempo-yellow flex items-center justify-center text-sm font-bold shadow-sm border-2 border-white dark:border-zinc-800" title={currentUser.email}>
-                                        {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'A'}
-                                    </div>
-                                    <button onClick={onSignOut} className="text-zinc-400 hover:text-tempo-red transition-colors" title="Sign Out"><Icon name="log-out" className="w-5 h-5" /></button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </header>
-            );
-        };
-
-        const LoginScreen = ({ onSignIn, onSignUp, theme, toggleTheme }) => {
-            const [isSignUp, setIsSignUp] = useState(false);
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [name, setName] = useState('');
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState(null);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setError(null);
-                setLoading(true);
-                try {
-                    if (isSignUp) { await onSignUp(email, password, name); } 
-                    else { await onSignIn(email, password); }
-                } catch (err) {
-                    console.error(err);
-                    let msg = err.message;
-                    if (err.code === 'auth/configuration-not-found') msg = "Setup Error: Please enable 'Email/Password' in Firebase Console.";
-                    else if (err.code === 'auth/email-already-in-use') msg = "Email already registered.";
-                    else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') msg = "Invalid email or password.";
-                    else if (err.code === 'auth/weak-password') msg = "Password too short (min 6 chars).";
-                    setError(msg);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-black p-4 font-sans transition-colors duration-300 relative">
-                    <div className="absolute top-4 right-4 z-20">
-                         <button onClick={toggleTheme} className="p-3 rounded-full bg-white dark:bg-zinc-800 shadow-md hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-400 transition-colors">
-                            {theme === 'dark' ? <Icon name="sun" className="w-5 h-5" /> : <Icon name="moon" className="w-5 h-5" />}
-                        </button>
-                    </div>
-                    <div className="w-full max-w-md bg-white dark:bg-tempo-darkcard rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800 p-10 fade-in z-10 relative">
-                        <div className="flex justify-center mb-8">
-                            <div className="w-20 h-20 bg-tempo-orange rounded-3xl flex items-center justify-center shadow-xl shadow-orange-200 dark:shadow-none transform -rotate-3"><Icon name="shield" className="text-white w-10 h-10" /></div>
-                        </div>
-                        <h2 className="text-3xl font-extrabold text-center mb-2 text-tempo-purple dark:text-white">{isSignUp ? 'Join the Team' : 'Welcome Back'}</h2>
-                        <p className="text-center text-zinc-700 dark:text-zinc-400 mb-8 font-medium">{isSignUp ? 'Create your agent profile.' : 'Sign in to access daily challenges.'}</p>
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            {isSignUp && (
-                                <div className="relative group">
-                                    <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="user" className="w-5 h-5" /></div>
-                                    <input type="text" placeholder="Agent Name (e.g. AG101)" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={name} onChange={e => setName(e.target.value)} required />
-                                </div>
-                            )}
-                            <div className="relative group">
-                                <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="mail" className="w-5 h-5" /></div>
-                                <input type="email" placeholder="Email Address" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={email} onChange={e => setEmail(e.target.value)} required />
-                            </div>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-3.5 text-zinc-400 group-focus-within:text-tempo-orange transition-colors"><Icon name="lock" className="w-5 h-5" /></div>
-                                <input type="password" placeholder="Password" className="w-full pl-12 p-3.5 rounded-xl border-2 border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-tempo-darkinput dark:text-white focus:bg-white dark:focus:bg-tempo-darkinput focus:border-tempo-orange focus:outline-none transition-all font-medium" value={password} onChange={e => setPassword(e.target.value)} required />
-                            </div>
-                            {error && <div className="p-4 text-sm bg-red-50 dark:bg-red-900/20 text-tempo-red dark:text-red-400 rounded-xl border-l-4 border-tempo-red flex items-start gap-3"><Icon name="alert-circle" className="w-5 h-5 min-w-[20px]" /><span className="font-medium">{error}</span></div>}
-                            <button type="submit" disabled={loading} className="w-full bg-tempo-purple text-white font-bold py-4 rounded-xl hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5 transition-all active:bg-green-600 disabled:opacity-70 disabled:transform-none flex items-center justify-center gap-2 mt-4">{loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')} {!loading && <Icon name="arrow-right" className="w-5 h-5" />}</button>
-                        </form>
-                        <div className="mt-8 text-center">
-                            <button onClick={() => { setIsSignUp(!isSignUp); setError(null); }} className="text-sm text-zinc-700 dark:text-zinc-400 hover:text-tempo-orange font-semibold transition-colors">{isSignUp ? 'Already have an account? Sign In' : 'New agent? Create an account'}</button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
         // --- MAIN APP LOGIC ---
         const App = () => {
             const [theme, setTheme] = useState('light');
@@ -797,7 +797,7 @@
                 db.collection('responses').doc(rid).update({
                     adminFeedback: text, score: score,
                     feedbackTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    feedbackAuthor: user.email // Track who gave feedback
+                    feedbackAuthor: user.email 
                 });
             };
             const handleDeleteFeedback = (rid) => db.collection('responses').doc(rid).update({ adminFeedback: null, feedbackTimestamp: null, score: 0, feedbackAuthor: null });
@@ -811,10 +811,10 @@
             };
             const handleEditComment = (rid, index, newText) => {
                 const r = responses.find(r => r.id === rid); if(!r) return;
-                const updated = [...(r.comments || [])]; updated[i] = { ...updated[i], text: newText, edited: true };
+                const updated = [...(r.comments || [])]; updated[index] = { ...updated[index], text: newText, edited: true };
                 db.collection('responses').doc(rid).update({ comments: updated });
             }
-            const handleDeleteComment = (rid, i) => {
+            const handleDeleteComment = (rid, index) => {
                 const r = responses.find(r => r.id === rid); if(!r) return;
                 const updated = (r.comments || []).filter((_, idx) => idx !== i);
                 db.collection('responses').doc(rid).update({ comments: updated });
@@ -832,7 +832,6 @@
 
             return (
                 <div className="pb-20">
-                    <FitnessBackground />
                     <Header theme={theme} toggleTheme={toggleTheme} userRole={userRole} currentUser={user} onSignOut={handleSignOut} />
                     <main className="max-w-4xl mx-auto px-4 py-8 relative z-10">
                         <div className="flex bg-white dark:bg-zinc-900 p-1.5 rounded-2xl mb-10 shadow-sm border border-zinc-100 dark:border-zinc-800">
